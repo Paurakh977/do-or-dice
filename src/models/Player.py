@@ -44,7 +44,7 @@ class Player:
         avatar_url (str): The URL of the player's avatar image Default is "../assests/default.png".
 
     Methods:
-        participlate_in_game(): Method for player to participate in the game player list.
+        participate_in_game(): Method for player to participate in the game player list.
         arrange_players_initially(): Class method to arrange players initially in a pseudo-random order.
         roll_dice(): Method for player to roll a dice.
         take_damage(damage): Method for player to take damage and update health points (hp).
