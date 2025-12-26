@@ -40,7 +40,7 @@ class Player:
         name (str): The name of the player.
         hp (int): The health points of the player Default is 20.
         vp (int): The victory points of the player Default is 0.
-        status (str): The status of the player (alive or fallen) Default is "alive".
+        status (Status): The status of the player (Status.ALIVE or Status.FALLEN). Default is Status.ALIVE.
         avatar_url (str): The URL of the player's avatar image Default is "../assests/default.png".
 
     Methods:
