@@ -1,4 +1,4 @@
-from dataclasses import is_dataclass, asdict
+from dataclasses import is_dataclass
 from .exceptions import InputDataValidator
 from ..models import Player, ActiveFace, FallenFace
 from ..services.types import EventRecord
@@ -9,7 +9,7 @@ class EventRecordValidator:
     """
 
     @staticmethod
-    def validate(event: object) -> bool:
+    def validate(event: EventRecord) -> bool:
         """
         Docstring for validate
         
@@ -22,7 +22,7 @@ class EventRecordValidator:
             raise InputDataValidator("Event must be an instance of EventRecord dataclass.")
 
         try:
-            mapping = asdict(event)
+            mapping = event.__dict__    
         except Exception:
             raise InputDataValidator("Unable to convert EventRecord dataclass to mapping.")
 
@@ -58,13 +58,8 @@ class EventRecordValidator:
         if not isinstance(rolled_by, Player):
             raise InputDataValidator("rolled_by must be a Player instance.")
         
-        #  identity check; fall back to matching by unique name if identity fails
-        if not any((p is rolled_by) or (hasattr(p, "name") and getattr(p, "name") == getattr(rolled_by, "name", None)) for p in participants):
+        if rolled_by not in participants:
             raise InputDataValidator("rolled_by must be included in participants.")
-
-        # this migh run in the run time too (check later)
-        # if rolled_by not in participants:
-        #     raise InputDataValidator("rolled_by must be included in participants.")
 
         if not isinstance(mapping["dice_face_value"], (ActiveFace, FallenFace)):
             raise InputDataValidator("dice_face_value must be an ActiveFace or FallenFace instance.")
