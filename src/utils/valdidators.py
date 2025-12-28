@@ -1,34 +1,15 @@
-"""
-Docstring for utils.valdidators:
-
-This module provides validation functions for various data types and formats used in the application.
-Such as validating the actions of players, game states, and input data.
-"""
-
-from dataclasses import asdict
-from ..services import EventRecord
+from dataclasses import is_dataclass, asdict
+from .exceptions import InputDataValidator
 from ..models import Player, ActiveFace, FallenFace
-from typing import Dict
+from ..services.types import EventRecord
 from datetime import datetime
-
-class MaxPlayersValidator(Exception): ...
-
-
-class InvalidPlayerActionValidator(Exception): ...
-
-
-class GameStateValidator(Exception): ...
-
-class InputDataValidator(Exception):
-    ...
-
 
 class EventRecordValidator:
     """Validate an `EventRecord`-shaped mapping.
     """
 
     @staticmethod
-    def validate(event: EventRecord) -> bool:
+    def validate(event: object) -> bool:
         """
         Docstring for validate
         
@@ -37,8 +18,7 @@ class EventRecordValidator:
         :return: True if the event record is valid, otherwise raises InputDataValidator
         :rtype: bool
         """
-        # Strict: only accept the EventRecord dataclass (runtime type) No Dict mapping type instances.
-        if not isinstance(event, EventRecord):
+        if not is_dataclass(event) or not isinstance(event, EventRecord):
             raise InputDataValidator("Event must be an instance of EventRecord dataclass.")
 
         try:
@@ -68,6 +48,8 @@ class EventRecordValidator:
         participants = mapping["participants"]
         if not isinstance(participants, list) or not participants:
             raise InputDataValidator("participants must be a non-empty list of Player instances.")
+        if len(participants) > 5:
+            raise InputDataValidator("participants list exceeds maximum of 5 players.")
         for p in participants:
             if not isinstance(p, Player):
                 raise InputDataValidator("each participant must be a Player instance.")
@@ -82,18 +64,10 @@ class EventRecordValidator:
         if not isinstance(mapping["dice_face_value"], (ActiveFace, FallenFace)):
             raise InputDataValidator("dice_face_value must be an ActiveFace or FallenFace instance.")
 
-        @staticmethod
         def _validate_player_int_list(name: str, low: int, high: int) -> None:
-            """
-            Docstring for _validate_player_int_list
-            A common validator for effect fields. This checks that the field is either None or a non-empty list of (Player, int) tuples,
-            and that the int values are within the specified range [low, high].
-            :param name: Description
-            :type name: str
-            :param low: Description
-            :type low: int
-            :param high: Description
-            :type high: int
+            """Validate an effect field is either None or a non-empty list of (Player,int).
+
+            Ensures each tuple has a Player and an int within [low, high].
             """
             val = mapping.get(name)
             if val is None:
@@ -128,4 +102,4 @@ class EventRecordValidator:
             )
 
         return True
-            
+    

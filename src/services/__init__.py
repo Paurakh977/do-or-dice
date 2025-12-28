@@ -1,2 +1,2 @@
 from .History import *
-__all__ = ['History', 'EventRecord']
+__all__ = ['HistoryService',]
