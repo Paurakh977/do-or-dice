@@ -184,13 +184,13 @@ def test_refine_event_all_faces_for_alive_and_fallen():
     assert svc.record_event(eid, p_fallen, FallenFace.NOTHING_2) is False
 
     # Now refine events and assert expected message fragments are present
-    refined = svc.refine_event(history=svc.history)
+    refined = svc.refine_event(history=svc.get_events(2,-2))
     assert refined is not None
     print(f"refined events:\n" + "\n".join(refined))
 
-    # Check some expected substrings for a few events
-    assert any("BACKFIRE" in s and "dealt -3 damage to alive" in s for s in refined)
-    assert any("POWER_MOVE" in s and "dealt -6 damage to target" in s for s in refined)
+    # Check some expected substrings for a few events cpmmented first 2 and last 2 to check tget events method
+    # assert any("BACKFIRE" in s and "dealt -3 damage to alive" in s for s in refined)
+    # assert any("POWER_MOVE" in s and "dealt -6 damage to target" in s for s in refined)
     assert any("POWER_MOVE" in s and "gained +3 VP" in s for s in refined)
     assert any("RECOVER" in s and "healed +3 health to alive" in s for s in refined)
     assert any("JAB" in s and "dealt -2 damage to target" in s for s in refined)
@@ -200,6 +200,6 @@ def test_refine_event_all_faces_for_alive_and_fallen():
     # Fallen effects
     assert any("PLUS2HP_OR_PLUS1VP" in s and "healed +2 health to alive" in s for s in refined)
     assert any("REMOVE2HP_OR_MINUS1VP" in s and "dealt -2 damage to alive" in s for s in refined)
-    assert any("PLUS2HP_OR_PLUS1VP" in s and "gained +1 VP" in s for s in refined)
-    assert any("REMOVE2HP_OR_MINUS1VP" in s and "stole -1 VP from alive" in s for s in refined)
+    # assert any("PLUS2HP_OR_PLUS1VP" in s and "gained +1 VP" in s for s in refined)
+    # assert any("REMOVE2HP_OR_MINUS1VP" in s and "stole -1 VP from alive" in s for s in refined)
 
