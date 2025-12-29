@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 
-from src.models.Player import Player, ActiveFace, FallenFace
+from src.models.Player import Player, Status, ActiveFace, FallenFace
 from src.services.History import HistoryService, EventRecord
 from src.utils import (
     InputDataValidator,
@@ -121,4 +121,85 @@ def test_validator_mutual_exclusivity_and_amount_ranges():
     )
     with pytest.raises(InputDataValidator):
         EventRecordValidator.validate(bad2)
+
+
+def test_refine_event_all_faces_for_alive_and_fallen():
+    p_alive = Player("alive")
+    p_target = Player("target")
+    svc = HistoryService()
+
+    eid = 1
+    # Active faces (alive player)
+    # Backfire -> damage to self
+    assert svc.record_event(eid, p_alive, ActiveFace.BACKFIRE, damage_dealt=3) is True
+    eid += 1
+
+    # Power move -> damage option to target
+    assert svc.record_event(eid, p_alive, ActiveFace.POWER_MOVE, consumer=p_target, damage_dealt=6) is True
+    eid += 1
+
+    # Power move -> VP option (self)
+    assert svc.record_event(eid, p_alive, ActiveFace.POWER_MOVE, vp_gained=3) is True
+    eid += 1
+
+    # Recover -> heal self
+    assert svc.record_event(eid, p_alive, ActiveFace.RECOVER, healing_done=3) is True
+    eid += 1
+
+    # Jab -> damage to target
+    assert svc.record_event(eid, p_alive, ActiveFace.JAB, consumer=p_target, damage_dealt=2) is True
+    eid += 1
+
+    # Strike -> damage to target
+    assert svc.record_event(eid, p_alive, ActiveFace.STRIKE, consumer=p_target, damage_dealt=4) is True
+    eid += 1
+
+    # Pickpocket -> steal (vp_stolen)
+    assert svc.record_event(eid, p_alive, ActiveFace.PICKPOCKET, consumer=p_target, vp_stolen=1) is True
+    eid += 1
+
+    # Fallen faces (fallen player)
+    p_fallen = Player("fallen")
+    p_fallen.status = Status.FALLEN
+
+    # NOTHING faces should fail validation because no effect is present
+    assert svc.record_event(eid, p_fallen, FallenFace.NOTHING_1) is False
+    eid += 1
+
+    # PLUS2HP_OR_PLUS1VP -> choose heal option to target
+    assert svc.record_event(eid, p_fallen, FallenFace.PLUS2HP_OR_PLUS1VP, consumer=p_alive, healing_done=2) is True
+    eid += 1
+
+    # REMOVE2HP_OR_MINUS1VP -> choose damage option to target
+    assert svc.record_event(eid, p_fallen, FallenFace.REMOVE2HP_OR_MINUS1VP, consumer=p_alive, damage_dealt=2) is True
+    eid += 1
+
+    # second set of PLUS/REMOVE variants
+    assert svc.record_event(eid, p_fallen, FallenFace.PLUS2HP_OR_PLUS1VP_2, consumer=p_alive, vp_gained=1) is True
+    eid += 1
+    assert svc.record_event(eid, p_fallen, FallenFace.REMOVE2HP_OR_MINUS1VP_2, consumer=p_alive, vp_stolen=1) is True
+    eid += 1
+
+    # NOTHING_2 should also fail
+    assert svc.record_event(eid, p_fallen, FallenFace.NOTHING_2) is False
+
+    # Now refine events and assert expected message fragments are present
+    refined = svc.refine_event(history=svc.history)
+    assert refined is not None
+    print(f"refined events:\n" + "\n".join(refined))
+
+    # Check some expected substrings for a few events
+    assert any("BACKFIRE" in s and "dealt -3 damage to alive" in s for s in refined)
+    assert any("POWER_MOVE" in s and "dealt -6 damage to target" in s for s in refined)
+    assert any("POWER_MOVE" in s and "gained +3 VP" in s for s in refined)
+    assert any("RECOVER" in s and "healed +3 health to alive" in s for s in refined)
+    assert any("JAB" in s and "dealt -2 damage to target" in s for s in refined)
+    assert any("STRIKE" in s and "dealt -4 damage to target" in s for s in refined)
+    assert any("PICKPOCKET" in s and "stole -1 VP from target" in s for s in refined)
+
+    # Fallen effects
+    assert any("PLUS2HP_OR_PLUS1VP" in s and "healed +2 health to alive" in s for s in refined)
+    assert any("REMOVE2HP_OR_MINUS1VP" in s and "dealt -2 damage to alive" in s for s in refined)
+    assert any("PLUS2HP_OR_PLUS1VP" in s and "gained +1 VP" in s for s in refined)
+    assert any("REMOVE2HP_OR_MINUS1VP" in s and "stole -1 VP from alive" in s for s in refined)
 
