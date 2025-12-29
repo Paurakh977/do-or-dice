@@ -125,7 +125,7 @@ class HistoryService:
             if v.damage_dealt:
                 for target, amount in v.damage_dealt:
                     refined_events.append(
-                        f" {v.rolled_by.name} got {v.dice_face_value.name} and dealt {amount} damage to {target.name}."
+                        f" {v.rolled_by.name} got {v.dice_face_value.name} and dealt -{amount} damage to {target.name}."
                     )
 
             if v.healing_done:
@@ -137,10 +137,13 @@ class HistoryService:
             if v.vp_gained:
                 for target, amount in v.vp_gained:
                     refined_events.append(
-                        f" {v.rolled_by.name} got {v.dice_face_value.name} and gained {amount} VP."
+                        f" {v.rolled_by.name} got {v.dice_face_value.name} and gained +{amount} VP."
                     )
             if v.vp_stolen:
                 for target, amount in v.vp_stolen:
                     refined_events.append(
-                        f" {v.rolled_by.name} got {v.dice_face_value.name} and stole {amount} VP from {target.name}."
+                        f" {v.rolled_by.name} got {v.dice_face_value.name} and stole -{amount} VP from {target.name}."
                     )
+
+
+        return refined_events
