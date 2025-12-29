@@ -80,3 +80,16 @@ class HistoryService():
         except InputDataValidator as e:
             print(f"Failed to record event {event_id}: {e}")
             return False
+        
+        return False
+    
+    def get_events(self, start: int = 0, end: int = -1) -> Dict[int, EventRecord]:
+        """
+        Retrieves the entire game history of events with provided index range.
+        
+        :return: Dictionary of event_id to EventRecord.
+        """
+        return self.history[start:end]
+    
+    def refine_event(self, event_id: int, **kwargs) -> bool | InputDataValidator:
+        ...
