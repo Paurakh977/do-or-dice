@@ -68,3 +68,15 @@ class IngameRankService():
             IngameRankService.update_ranks()
             return True
         return False
+
+    @property
+    def get_ranks()->list[RankRecord]:
+        """
+        Getter for ranks
+
+        :return: Dict[int, RankRecord]
+        """
+        return sorted(
+        IngameRankService.ranks.values(),
+        key=lambda r: r['rank']
+    )
