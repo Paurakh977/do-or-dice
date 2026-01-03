@@ -203,6 +203,19 @@ class Player:
         """
         return self.__hp
 
+    def reduce_vp(self, vp_decrement: int) -> bool | GameStateValidator:
+        """
+        Method for self player to reduce victory points (vp).
+        Args:
+            vp_decrement (int): The amount of victory points to be reduced."""
+        
+        if not (0 < vp_decrement <= 3):
+            raise GameStateValidator("Game VP transactions must be between 1 and 3")
+        if self.__vp - vp_decrement < 0:
+            raise GameStateValidator("VP cannot be negative")
+
+        self.__vp -= vp_decrement
+        return True
     @property
     def vp(self) -> int:
         """getter for vp"""
