@@ -2,6 +2,7 @@ from __future__ import annotations
 from ..controllers.api import Action_service
 from ..models import Player, ActiveFace, FallenFace, active_face_vals, fallen_face_vals
 from ..utils import GameStateValidator
+from ..configs.constants import MAX_ROUNDS as CONFIG_MAX_ROUNDS
 
 
 class TurnResolverService():
@@ -9,7 +10,7 @@ class TurnResolverService():
     Docstring for services.turnresolver:
     This service is responsible for resolving player turns in the game, taking and updating actions of each event of the game cycle.
     """
-    MAX_ROUNDS :int = 6
+    MAX_ROUNDS :int = CONFIG_MAX_ROUNDS
     CURRENT_ROUND :int = 0
     participants : list[Player] =[]
 

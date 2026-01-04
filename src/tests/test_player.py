@@ -35,6 +35,8 @@ def test_take_damage_and_fall_and_errors():
     assert p.take_damage(15) is True
     assert p.status == Status.FALLEN
     assert p.hp == 0
+    # ensure the internal fall setter was activated
+    assert p._Player__set_player_to_fallen is True
 
     # this further damage should raise Exception 
     with pytest.raises(InvalidPlayerActionValidator):
@@ -60,6 +62,8 @@ def test_heal_success_and_validation():
     # Fallen cannot be healed
     p2 = Player("Fallen")
     p2.take_damage(100)
+    # ensure internal setter ran for the fallen player
+    assert p2._Player__set_player_to_fallen is True
     with pytest.raises(InvalidPlayerActionValidator):
         # this should be rasing Exception as fallen player cant be healed
         p2.heal(5)

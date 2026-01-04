@@ -4,6 +4,7 @@ from ..helpers import Randomizer
 from colorama import init, Fore
 from typing import Union
 from .Dice import ActiveFace, FallenFace, Status, active_face_vals, fallen_face_vals
+from ..configs.constants import TOTAL_PLAYERS
 
 init(autoreset=True)
 
@@ -73,7 +74,7 @@ class Player:
         Returns:
             bool: True if participation is successful, False otherwise.
         """
-        if len(Player.player_arrangement) < 5:
+        if len(Player.player_arrangement) < TOTAL_PLAYERS:
             Player.player_arrangement.append(self)
             return True
         else:
@@ -101,7 +102,7 @@ class Player:
         """
         Method for player to roll a dice.
 
-        Returns:
+                    if len(Player.player_arrangement) == TOTAL_PLAYERS:
             Union[ActiveFace, FallenFace]: The enum member representing the dice face outcome
                 for an alive (`ActiveFace`) or fallen (`FallenFace`) player.
         """
@@ -114,7 +115,7 @@ class Player:
         """
         Setter  for __set_player_to_fallen
         """
-        # No need for re-check as this is a private property
+
         self.status = Status.FALLEN
         # Ensuring that hp never stays negative
         try:

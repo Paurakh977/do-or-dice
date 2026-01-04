@@ -3,6 +3,7 @@ from .exceptions import InputDataValidator
 from ..models import Player, ActiveFace, FallenFace
 from ..services.types import EventRecord
 from datetime import datetime
+from ..configs.constants import TOTAL_PLAYERS
 
 
 class EventRecordValidator:
@@ -49,8 +50,8 @@ class EventRecordValidator:
             raise InputDataValidator(
                 "participants must be a non-empty list of Player instances."
             )
-        if len(participants) > 5:
-            raise InputDataValidator("participants list exceeds maximum of 5 players.")
+        if len(participants) > TOTAL_PLAYERS:
+            raise InputDataValidator(f"participants list exceeds maximum of {TOTAL_PLAYERS} players.")
         for p in participants:
             if not isinstance(p, Player):
                 raise InputDataValidator("each participant must be a Player instance.")
