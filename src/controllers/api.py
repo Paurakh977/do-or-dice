@@ -1,21 +1,19 @@
 from __future__ import annotations
 from ..models import Player, FallenFace, ActiveFace, Status, active_face_vals, fallen_face_vals 
 from ..utils import InvalidPlayerActionValidator, GameStateValidator
-
-
-# class ActiveFace(Enum):
-#     BACKFIRE = "Backfire"
-#     POWER_MOVE = "Power Move"
-#     RECOVER = "Recover"
-#     JAB = "Jab"
-#     STRIKE = "Strike"
-#     PICKPOCKET = "Pickpocket"
-
+from ..services import HistoryService
 
 class Action_service:
+    """
+    Docstring for Action_service
+    
+    __init__ method parameters:
+    - ingame_history_service (HistoryService): An instance of HistoryService to manage game history.
+
+    """
     ...
-    def __init__(self):
-        ...
+    def __init__(self, ingame_history_service: HistoryService):
+        self.in_game_history_service = ingame_history_service
 
     def __validate_action(self, player: Player, action: FallenFace | ActiveFace) -> bool:
         """
@@ -66,14 +64,32 @@ class Action_service:
             if target is None:
                 if action == ActiveFace.BACKFIRE:
                     player.take_damage(3)
+                    self.in_game_history_service.record_event(
+                        event_id=len(self.in_game_history_service.history) + 1,
+                        rolled_by=player,
+                        dice_face_value=action,
+                        damage_dealt=3
+                    )
                     return True
                 if action == ActiveFace.RECOVER:
                     player.heal(3)
+                    self.in_game_history_service.record_event(
+                        event_id=len(self.in_game_history_service.history) + 1,
+                        rolled_by=player,
+                        dice_face_value=action,
+                        healing_done=3
+                    )
                     return True
                 if action == ActiveFace.POWER_MOVE:
                     # POWER_MOVE without a target => assume VP gain unless specified otherwise
                     if choice is None or choice == "gain_vp":
                         player.gain_vp(3)
+                        self.in_game_history_service.record_event(
+                            event_id=len(self.in_game_history_service.history) + 1,
+                            rolled_by=player,
+                            dice_face_value=action,
+                            vp_gained=3
+                        )
                         return True
                     # Explicit damage choice requires a target
                     if choice == "damage_hp":
@@ -90,30 +106,65 @@ class Action_service:
                     # recording players targets
                     player.last_targetedto = target.name
                     target.last_targetedby = player.name
+                    self.in_game_history_service.record_event(
+                        event_id=len(self.in_game_history_service.history) + 1,
+                        rolled_by=player,
+                        dice_face_value=action,
+                        damage_dealt=6,
+                        consumer=target
+                    )
                     return True
                 if choice == "gain_vp":
                     player.gain_vp(3)
+                    self.in_game_history_service.record_event(
+                        event_id=len(self.in_game_history_service.history) + 1,
+                        rolled_by=player,
+                        dice_face_value=action,
+                        vp_gained=3
+                    )
                     return True
                 raise InvalidPlayerActionValidator("Invalid choice_action provided for POWER_MOVE")
             if action == ActiveFace.JAB:
                 target.take_damage(2)
                 player.last_targetedto = target.name
                 target.last_targetedby = player.name
+                self.in_game_history_service.record_event(
+                    event_id=len(self.in_game_history_service.history) + 1,
+                    rolled_by=player,
+                    dice_face_value=action,
+                    damage_dealt=2,
+                    consumer=target
+                )
                 return True
             if action == ActiveFace.STRIKE:
                 target.take_damage(4)
                 player.last_targetedto = target.name
                 target.last_targetedby = player.name
+                self.in_game_history_service.record_event(
+                    event_id=len(self.in_game_history_service.history) + 1,
+                    rolled_by=player,
+                    dice_face_value=action,
+                    damage_dealt=4,
+                    consumer=target
+                )
                 return True
             if action == ActiveFace.PICKPOCKET:
                 player.steal_vp(target, 1)
                 player.last_targetedto = target.name
                 target.last_targetedby = player.name
+                self.in_game_history_service.record_event(
+                    event_id=len(self.in_game_history_service.history) + 1,
+                    rolled_by=player,
+                    dice_face_value=action,
+                    vp_stolen=1,
+                    consumer=target
+                )
                 return True
 
         if isinstance(action, FallenFace):
             # eat 5 star do nothing lol
             if target is None:
+                # no need to track history for nothing dice rolls for now
                 return True
 
             # Fallen players can only target alive players and cannot target the same player twice
@@ -126,8 +177,22 @@ class Action_service:
             if action in (FallenFace.PLUS2HP_OR_PLUS1VP, FallenFace.PLUS2HP_OR_PLUS1VP_2):
                 if choice == "heal_hp":
                     target.heal(2)
+                    self.in_game_history_service.record_event(
+                        event_id=len(self.in_game_history_service.history) + 1,
+                        rolled_by=player,
+                        dice_face_value=action,
+                        healing_done=2,
+                        consumer=target
+                    )
                 elif choice == "gain_vp":
                     target.gain_vp(1)
+                    self.in_game_history_service.record_event(
+                        event_id=len(self.in_game_history_service.history) + 1,
+                        rolled_by=player,
+                        dice_face_value=action,
+                        vp_gained=1,
+                        consumer=target
+                    )
                 else:
                     raise InvalidPlayerActionValidator("Invalid choice_action provided for PLUS2HP_OR_PLUS1VP")
                 player.last_targetedto = target.name
@@ -137,8 +202,22 @@ class Action_service:
             if action in (FallenFace.REMOVE2HP_OR_MINUS1VP, FallenFace.REMOVE2HP_OR_MINUS1VP_2):
                 if choice == "damage_hp":
                     target.take_damage(2)
+                    self.in_game_history_service.record_event(
+                        event_id=len(self.in_game_history_service.history) + 1,
+                        rolled_by=player,
+                        dice_face_value=action,
+                        damage_dealt=2,
+                        consumer=target
+                    )
                 elif choice == "steal_vp":
                     target.reduce_vp(1)
+                    self.in_game_history_service.record_event(
+                        event_id=len(self.in_game_history_service.history) + 1,
+                        rolled_by=player,
+                        dice_face_value=action,
+                        vp_stolen=1,
+                        consumer=target
+                    )
                 else:
                     raise InvalidPlayerActionValidator("Invalid choice_action provided for REMOVE2HP_OR_MINUS1VP")
                 player.last_targetedto = target.name
