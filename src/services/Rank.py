@@ -64,6 +64,9 @@ class IngameRankService:
     @staticmethod
     def check_rank() -> bool:
         """Return True and update ranks if ordering has changed."""
+
+        # always refresh the data before checking
+        IngameRankService.__update_data()
         sorted_rankings = sorted(
             IngameRankService.ranks.items(),
             key=lambda item: (
@@ -82,6 +85,16 @@ class IngameRankService:
             if rank_record["player_name"] == player_name:
                 return rank_record
         raise InputDataValidator(f"Player with name {player_name} not found in ranks")
+
+    
+    @classmethod
+    def __update_data(cls) -> None:
+        for key, value in list(cls.ranks.items()):
+            player = next((p for p in Player.player_arrangement if p.name == value["player_name"]), None)
+            if player:
+                value["vp_count"] = player.vp
+                value["hp"] = player.hp
+                cls.ranks[key] = value
 
     @property
     def get_ranks_list(self) -> List[RankRecord]:
