@@ -149,6 +149,10 @@ class Action_service:
                 )
                 return True
             if action == ActiveFace.PICKPOCKET:
+                # Guard against stealing when target has no VP to give.
+                if target.vp < 1:
+                    # No VP to stealthen  action has no effect. BUT NEEDES TO UPDATED IN HISTORY
+                    return False
                 player.steal_vp(target, 1)
                 player.last_targetedto = target.name
                 target.last_targetedby = player.name
@@ -210,6 +214,9 @@ class Action_service:
                         consumer=target
                     )
                 elif choice == "steal_vp":
+                    # Guard against stealing when target has insufficient VP BUT NEEDS TO BE TRACKED IN HISTORY
+                    if target.vp < 1:
+                        return False
                     target.reduce_vp(1)
                     self.in_game_history_service.record_event(
                         event_id=len(self.in_game_history_service.history) + 1,
