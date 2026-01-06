@@ -46,12 +46,6 @@ class GameController:
         print("Game Started!")
 
 
-    def get_history(self, last_n_events: int = 1) -> list[str]:
-        # refine_event returns a list[str]; return the last `last_n_events` entries
-        events = self.ingame_action_service.in_game_history_service.get_events()
-        refined = self.ingame_action_service.in_game_history_service.refine_event(history=events)
-        return refined[-last_n_events:]
-
     def start_game_loop(self) -> None:
         """
         Method to start the main game loop, resolving turns until max rounds is reached.
@@ -71,7 +65,6 @@ class GameController:
                 player.last_targetedto = None
 
             # show history after each round
-            print(f"History after Round {self.CURRENT_ROUND + 1}: {self.get_history()}")
             self.CURRENT_ROUND += 1
 
         print("Game Over! Maximum rounds reached.")

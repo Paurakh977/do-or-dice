@@ -156,6 +156,7 @@ class Player:
             raise InvalidPlayerActionValidator("Fallen player cannot be healed")
 
         self.__hp += heal_hp
+        self.__hp = min(self.__hp, 20)  # Cap hp at 20
         return True
 
     def gain_vp(self, vp_increment: int) -> bool | GameStateValidator:
