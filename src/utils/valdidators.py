@@ -100,17 +100,18 @@ class EventRecordValidator:
         _validate_player_int_list("vp_gained", 1, 5)
         _validate_player_int_list("vp_stolen", 1, 5)
 
-        #  only one of these effect groups may be present
-        # damge deal bha ko action ma healing, vp transaction is not possible.
+        # Either exactly one effect group must be present, or none
+        # (none represents a valid "no-effect" action that should still be recorded).
         effects = [
             getattr(event, "damage_dealt") is not None,
             getattr(event, "healing_done") is not None,
             getattr(event, "vp_gained") is not None,
             getattr(event, "vp_stolen") is not None,
         ]
-        if sum(1 for e in effects if e) != 1:
+        effects_count = sum(1 for e in effects if e)
+        if effects_count not in (0, 1):
             raise InputDataValidator(
-                "An event cannot have more than one of damage_dealt, healing_done, vp_gained, vp_stolen set. And only one of the effect fields must be present."
+                "An event must have either zero (no-effect) or exactly one of damage_dealt, healing_done, vp_gained, vp_stolen set."
             )
 
         return True

@@ -151,7 +151,13 @@ class Action_service:
             if action == ActiveFace.PICKPOCKET:
                 # Guard against stealing when target has no VP to give.
                 if target.vp < 1:
-                    # No VP to stealthen  action has no effect. BUT NEEDES TO UPDATED IN HISTORY
+                    # No VP to steal — record a no-effect event into history
+                    self.in_game_history_service.record_event(
+                        event_id=len(self.in_game_history_service.history) + 1,
+                        rolled_by=player,
+                        dice_face_value=action,
+                        consumer=target,
+                    )
                     return False
                 player.steal_vp(target, 1)
                 player.last_targetedto = target.name
@@ -168,7 +174,12 @@ class Action_service:
         if isinstance(action, FallenFace):
             # eat 5 star do nothing lol
             if target is None:
-                # no need to track history for nothing dice rolls for now
+                # record a no-effect event for fallen player's solo/no-target roll
+                self.in_game_history_service.record_event(
+                    event_id=len(self.in_game_history_service.history) + 1,
+                    rolled_by=player,
+                    dice_face_value=action,
+                )
                 return True
 
             # Fallen players can only target alive players and cannot target the same player twice
@@ -214,8 +225,13 @@ class Action_service:
                         consumer=target
                     )
                 elif choice == "steal_vp":
-                    # Guard against stealing when target has insufficient VP BUT NEEDS TO BE TRACKED IN HISTORY
                     if target.vp < 1:
+                        self.in_game_history_service.record_event(
+                            event_id=len(self.in_game_history_service.history) + 1,
+                            rolled_by=player,
+                            dice_face_value=action,
+                            consumer=target,
+                        )
                         return False
                     target.reduce_vp(1)
                     self.in_game_history_service.record_event(

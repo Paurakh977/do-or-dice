@@ -51,7 +51,7 @@ def test_take_damage_and_fall_and_errors():
 def test_heal_success_and_validation():
     p = Player("Heal")
     assert p.heal(5) is True
-    assert p.hp == 25
+    assert p.hp == 20  # capped at 20
 
     with pytest.raises(GameStateValidator):
         p.heal(0)

@@ -61,9 +61,8 @@ class HistoryService:
         else:
             participants.append(
                 rolled_by
-            )  # if no consumer, just add the roller again to indicate solo action
+            )  # if no consumerthen  add the roller again to indicate solo action
 
-        # Normalize scalar effect arguments into lists of (Player, int) tuples
         def _to_effect_list(
             amount: Optional[int], target: Optional[Player]
         ) -> Optional[List[tuple[Player, int]]]:
@@ -71,7 +70,7 @@ class HistoryService:
                 return None
             t = (
                 target or rolled_by
-            )  # assuming that sometimes consumer/target can be none when backfire happens, so here in such scenario roller is the target iteself
+            )  # assuming that sometimes consumer/target can be none when backfire happens so here in such scenario roller is the target iteself
             return [(t, amount)]
 
         damage_list = _to_effect_list(damage_dealt, consumer)
@@ -138,13 +137,30 @@ class HistoryService:
 
             if v.vp_gained:
                 for target, amount in v.vp_gained:
-                    refined_events.append(
-                        f" {v.rolled_by.name} got {v.dice_face_value.name} and gained +{amount} VP."
-                    )
+                    if target is v.rolled_by:
+                        refined_events.append(
+                            f" {v.rolled_by.name} got {v.dice_face_value.name} and gained +{amount} VP."
+                        )
+                    else:
+                        refined_events.append(
+                            f" {v.rolled_by.name} got {v.dice_face_value.name} and gave +{amount} VP to {target.name}."
+                        )
             if v.vp_stolen:
                 for target, amount in v.vp_stolen:
                     refined_events.append(
                         f" {v.rolled_by.name} got {v.dice_face_value.name} and stole -{amount} VP from {target.name}."
+                    )
+
+            if not (v.damage_dealt or v.healing_done or v.vp_gained or v.vp_stolen):
+                # infer a consumer/target where possible (second participant) else rolled_by
+                target = v.participants[1] if len(v.participants) > 1 else v.rolled_by
+                if target is v.rolled_by:
+                    refined_events.append(
+                        f" {v.rolled_by.name} got {v.dice_face_value.name} and it had no effect."
+                    )
+                else:
+                    refined_events.append(
+                        f" {v.rolled_by.name} got {v.dice_face_value.name} but it had no effect on {target.name}."
                     )
 
 
