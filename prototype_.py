@@ -31,9 +31,9 @@ MAX_ROUNDS = 10
 PLAYER_PROFILES = {
     0: {"name": "Ashika", "image": "assets/images/ashika.jpg", "audio": "assets/audios/ashika_asking.mp3"},
     1: {"name": "Bijay Shai", "image": "assets/images/bijay_shai.jpg", "audio": "assets/audios/bijay_shai.mp3"},
-    2: {"name": "Dhamala", "image": "assets/images/dhamala.jpg", "audio": "assets/audios/dhamala.mp3"},
-    3: {"name": "Sacar", "image": "assets/images/sacar.jpg", "audio": "assets/audios/sacar.mp3"},
-    4: {"name": "Shere", "image": "assets/images/shere.jpg", "audio": "assets/audios/shere.mp3"},
+    2: {"name": "Jhamala", "image": "assets/images/dhamala.jpg", "audio": "assets/audios/dhamala.mp3"},
+    3: {"name": "Khakar", "image": "assets/images/sacar.jpg", "audio": "assets/audios/khakar.mp3"},
+    4: {"name": "Dere", "image": "assets/images/shere.jpg", "audio": "assets/audios/shere.mp3"},
 }
 
 # --- "SUPER MINIMAL" PALETTE ---
