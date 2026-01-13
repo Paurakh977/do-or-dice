@@ -5,12 +5,14 @@ import pygame
 import pygame.gfxdraw
 import pygame_gui
 from pygame_gui.elements import UITextBox, UIButton
+from pathlib import Path
 
 # ==================================================================
 # 🔧 PYTHON 3.13 COMPATIBILITY SETUP
 # ==================================================================
 try:
     pygame.init()
+    pygame.mixer.init()
 except AttributeError:
     pass 
 
@@ -24,6 +26,15 @@ if not hasattr(pygame, 'transform'): pygame.transform = sys.modules.get('pygame.
 DEFAULT_W, DEFAULT_H = 1280, 800
 FPS = 60
 MAX_ROUNDS = 10
+
+# --- PLAYER PROFILES (Image & Audio Mapping) ---
+PLAYER_PROFILES = {
+    0: {"name": "Ashika", "image": "assets/images/ashika.jpg", "audio": "assets/audios/ashika_asking.mp3"},
+    1: {"name": "Bijay Shai", "image": "assets/images/bijay_shai.jpg", "audio": "assets/audios/bijay_shai.mp3"},
+    2: {"name": "Dhamala", "image": "assets/images/dhamala.jpg", "audio": "assets/audios/dhamala.mp3"},
+    3: {"name": "Sacar", "image": "assets/images/sacar.jpg", "audio": "assets/audios/sacar.mp3"},
+    4: {"name": "Shere", "image": "assets/images/shere.jpg", "audio": "assets/audios/shere.mp3"},
+}
 
 # --- "SUPER MINIMAL" PALETTE ---
 # Backgrounds
@@ -214,7 +225,8 @@ class Dice:
 class Player:
     def __init__(self, idx):
         self.idx = idx
-        self.name = f"P{idx + 1}"
+        profile = PLAYER_PROFILES.get(idx, {})
+        self.name = profile.get("name", f"P{idx + 1}")
         self.hp = 20
         self.max_hp = 20
         self.vp = 0
@@ -222,6 +234,19 @@ class Player:
         self.pos = (0,0)
         self.rect = pygame.Rect(0,0,100,100)
         self.scale = 1.0
+        
+        # Load player image
+        self.image = None
+        self.image_original = None
+        image_path = profile.get("image")
+        if image_path and Path(image_path).exists():
+            try:
+                self.image_original = pygame.image.load(image_path)
+            except Exception as e:
+                print(f"Error loading image for {self.name}: {e}")
+        
+        # Load audio
+        self.audio_path = profile.get("audio")
 
     def calculate_position(self, center, radius):
         angle = -90 + (self.idx * (360 / 5))
@@ -242,6 +267,11 @@ class Player:
         # Smooth scale on hover
         target_scale = 1.15 if hover else 1.0
         self.scale += (target_scale - self.scale) * 0.2
+        
+        # Scale and cache image at current scale
+        if self.image_original:
+            size = int(100 * self.scale)
+            self.image = pygame.transform.scale(self.image_original, (size, size))
 
     def draw(self, surf, is_active, is_target, hover):
         x, y = self.pos
@@ -256,10 +286,22 @@ class Player:
         if is_active:
              draw_circle(surf, (40, 40, 50), (x, y), 65*s)
 
-        # 3. Avatar Circle
-        base_col = (50, 50, 55)
-        if not self.alive: base_col = (30, 30, 30)
-        draw_circle(surf, base_col, (x, y), 50*s)
+        # 3. Avatar Circle / Image
+        if self.image:
+            # Draw image as circular avatar
+            img_rect = self.image.get_rect(center=(x, y))
+            # Create circular mask
+            mask_surf = pygame.Surface((img_rect.width, img_rect.height), pygame.SRCALPHA)
+            pygame.draw.circle(mask_surf, (255, 255, 255, 255), 
+                             (img_rect.width//2, img_rect.height//2), img_rect.width//2)
+            img_copy = self.image.copy()
+            img_copy.blit(mask_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+            surf.blit(img_copy, img_rect)
+        else:
+            # Fallback to circle if no image
+            base_col = (50, 50, 55)
+            if not self.alive: base_col = (30, 30, 30)
+            draw_circle(surf, base_col, (x, y), 50*s)
 
         # 4. Health Ring (The Minimalist Health Bar)
         if self.alive:
@@ -271,14 +313,14 @@ class Player:
             draw_arc_bar(surf, hp_col, (x,y), 50*s, 4, hp_pct)
 
         # 5. Text (Name & VP)
-        font_name = pygame.font.SysFont("Segoe UI", int(28*s), bold=True)
+        font_name = pygame.font.SysFont("Segoe UI", int(18*s), bold=True)
         col_name = C_WHITE if self.alive else C_GREY
         t_name = font_name.render(self.name, True, col_name)
-        surf.blit(t_name, t_name.get_rect(center=(x, y - 5*s)))
+        surf.blit(t_name, t_name.get_rect(center=(x, y - 65*s)))
         
         font_vp = pygame.font.SysFont("Verdana", int(14*s), bold=True)
         t_vp = font_vp.render(f"{self.vp} VP", True, C_GOLD)
-        surf.blit(t_vp, t_vp.get_rect(center=(x, y + 20*s)))
+        surf.blit(t_vp, t_vp.get_rect(center=(x, y + 65*s)))
 
         # 6. Dead Marker
         if not self.alive:
@@ -305,6 +347,8 @@ class Game:
         self.turn = 0
         self.state = "IDLE"
         self.payload = None
+        self.current_audio = None  # Track currently playing audio
+        self.last_played_player = -1  # Track which player's audio is currently playing
         
         self.prompt = "PLAYER 1"
         self.sub_prompt = "Click Dice to Roll"
@@ -318,6 +362,9 @@ class Game:
         self.log_box = UITextBox("", pygame.Rect(0,0,100,100), self.manager)
         self.resize_layout(DEFAULT_W, DEFAULT_H)
         self.log("System Ready.")
+        
+        # Auto-play Player 1's audio at game start
+        self.play_current_player_audio()
 
     def resize_layout(self, w, h):
         self.manager.set_window_resolution((w, h))
@@ -356,6 +403,27 @@ class Game:
         self.notification = Notification(title, sub, color)
 
     def get_active(self): return self.players[self.turn]
+    
+    def play_current_player_audio(self):
+        """Play audio for the current active player."""
+        p = self.get_active()
+        
+        # Only play if not already playing this player's audio
+        if self.last_played_player != p.idx:
+            self.last_played_player = p.idx
+            
+            # Stop previous audio
+            if self.current_audio:
+                pygame.mixer.Sound.stop(self.current_audio)
+                self.current_audio = None
+            
+            # Play current player's audio
+            if p.audio_path and Path(p.audio_path).exists():
+                try:
+                    self.current_audio = pygame.mixer.Sound(p.audio_path)
+                    self.current_audio.play()
+                except Exception as e:
+                    print(f"Error playing audio for {p.name}: {e}")
 
     # --- ACTION LOGIC ---
     def start_roll(self):
@@ -522,8 +590,16 @@ class Game:
             self.prompt = f"{p.name}'S TURN"
             self.sub_prompt = "Click Dice to Roll"
             self.dice.color = C_ACCENT if p.alive else C_GREY
+            
+            # Auto-play current player's audio
+            self.play_current_player_audio()
 
     def game_over(self):
+        # Stop all audio
+        if self.current_audio:
+            pygame.mixer.Sound.stop(self.current_audio)
+            self.current_audio = None
+        
         self.state = "GAME_OVER"
         self.prompt = "GAME OVER"
         self.sub_prompt = "View Results in Sidebar"
