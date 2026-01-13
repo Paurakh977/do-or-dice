@@ -4,11 +4,10 @@ import random
 import pygame
 import pygame.gfxdraw
 import pygame_gui
-from pygame_gui.elements import UITextBox, UIButton
 from pathlib import Path
 
 # ==================================================================
-# 🔧 PYTHON 3.13 COMPATIBILITY SETUP
+# 🔧 SETUP & CONSTANTS
 # ==================================================================
 try:
     pygame.init()
@@ -16,678 +15,587 @@ try:
 except AttributeError:
     pass 
 
-# Force-load submodules
-if not hasattr(pygame, 'surface'): pygame.surface = sys.modules.get('pygame.surface')
-if not hasattr(pygame, 'draw'): pygame.draw = sys.modules.get('pygame.draw')
-if not hasattr(pygame, 'image'): pygame.image = sys.modules.get('pygame.image')
-if not hasattr(pygame, 'transform'): pygame.transform = sys.modules.get('pygame.transform')
-
-# --- CONFIGURATION ---
+# Configuration
 DEFAULT_W, DEFAULT_H = 1280, 800
 FPS = 60
 MAX_ROUNDS = 10
 
-# --- PLAYER PROFILES (Image & Audio Mapping) ---
+# --- PATHS (Change BASE_DIR if your assets are elsewhere) ---
+BASE_DIR = Path(".") 
+IMG_DIR = BASE_DIR / "assets" / "images"
+AUD_DIR = BASE_DIR / "assets" / "audios"
+
+# --- PLAYER CONFIG ---
 PLAYER_PROFILES = {
-    0: {"name": "Ashika", "image": "assets/images/ashika.jpg", "audio": "assets/audios/ashika_asking.mp3"},
-    1: {"name": "Bijay Shai", "image": "assets/images/bijay_shai.jpg", "audio": "assets/audios/bijay_shai.mp3"},
-    2: {"name": "Jhamala", "image": "assets/images/dhamala.jpg", "audio": "assets/audios/dhamala.mp3"},
-    3: {"name": "Khakar", "image": "assets/images/sacar.jpg", "audio": "assets/audios/khakar.mp3"},
-    4: {"name": "Dere", "image": "assets/images/shere.jpg", "audio": "assets/audios/shere.mp3"},
+    0: {"name": "ASHIKA",     "img": "ashika.jpg",      "audio": "ashika_asking.mp3"},
+    1: {"name": "BIJAY SHAI", "img": "bijay_shai.jpg",  "audio": "bijay_shai.mp3"},
+    2: {"name": "DHAMALA",    "img": "dhamala.jpg",     "audio": "dhamala.mp3"},
+    3: {"name": "SACAR",      "img": "sacar.jpg",       "audio": "sacar.mp3"},
+    4: {"name": "SHERE",      "img": "shere.jpg",       "audio": "shere.mp3"},
 }
 
-# --- "SUPER MINIMAL" PALETTE ---
-# Backgrounds
-C_BG        = (18, 18, 20)       # Almost Black (Void)
-C_SIDEBAR   = (25, 25, 28)       # Slightly lighter for UI
-C_PANEL     = (35, 35, 40)       # Interactive Elements
+# --- MINIMALIST PALETTE ---
+C_BG        = (15, 17, 26)       # Deep Midnight (Background)
+C_SIDEBAR   = (20, 23, 34)       # Sidebar Background
+C_LINE      = (40, 44, 52)       # Subtle dividers
+C_TEXT_MAIN = (230, 236, 240)    # White-ish
+C_TEXT_DIM  = (100, 110, 130)    # Grey-ish
+C_ACCENT    = (110, 140, 250)    # Soft Blue
+C_DANGER    = (235, 90, 90)      # Soft Red
+C_SUCCESS   = (80, 210, 160)     # Soft Mint
+C_GOLD      = (240, 200, 80)     # Soft Gold
+C_PURPLE    = (180, 130, 250)    # Soft Purple
 
-# Accents (High Contrast)
-C_WHITE     = (240, 240, 240)    # Primary Text
-C_GREY      = (100, 100, 110)    # Secondary Text
-C_ACCENT    = (50, 150, 255)     # Electric Blue (Dice/Active)
-C_DANGER    = (255, 80, 80)      # Flat Red
-C_SUCCESS   = (80, 220, 150)     # Mint Green
-C_GOLD      = (255, 200, 50)     # Flat Gold
-C_PURPLE    = (160, 100, 255)    # Lavender
-
-# --- GRAPHICS HELPERS ---
-def draw_circle(surf, color, center, radius):
+# --- HELPER FUNCTIONS ---
+def draw_smooth_circle(surf, color, center, radius):
+    """Draws a high-quality anti-aliased circle."""
     x, y = int(center[0]), int(center[1])
-    pygame.gfxdraw.aacircle(surf, x, y, int(radius), color)
-    pygame.gfxdraw.filled_circle(surf, x, y, int(radius), color)
+    radius = int(radius)
+    pygame.gfxdraw.aacircle(surf, x, y, radius, color)
+    pygame.gfxdraw.filled_circle(surf, x, y, radius, color)
 
-def draw_ring(surf, color, center, radius, thickness):
-    x, y = int(center[0]), int(center[1])
-    for i in range(thickness):
-        pygame.gfxdraw.aacircle(surf, x, y, int(radius-i), color)
-
-def draw_arc_bar(surf, color, center, radius, thickness, percent):
-    """Draws a smooth circular progress bar."""
-    if percent <= 0: return
-    rect = pygame.Rect(center[0]-radius, center[1]-radius, radius*2, radius*2)
-    # Pygame draws arcs in radians, 0 is right. We want 0 at top (-90 deg).
-    start_angle = math.radians(-90)
-    end_angle = math.radians(-90 + (360 * percent))
+def load_and_crop_avatar(filename, size):
+    """Loads image, scales, and creates a circular surface."""
+    path = IMG_DIR / filename
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
     
-    # Draw arc is thick, but jagged. We draw thick line using polygon approximation for smoothness
-    # But for minimalism, standard pygame.draw.arc with width is okay if background is dark
-    pygame.draw.arc(surf, color, rect, start_angle, end_angle, thickness)
-
-# --- VISUAL EFFECTS CLASSES ---
-
-class Notification:
-    """A massive, centered text pop-up that tells you what happened."""
-    def __init__(self, text, subtext, color):
-        self.text = text.upper()
-        self.subtext = subtext
-        self.color = color
-        self.life = 120 # 2 seconds
-        self.max_life = 120
-        self.y_offset = 0
+    try:
+        if not path.exists(): raise FileNotFoundError
+        img = pygame.image.load(path).convert_alpha()
+        # Scale keeping aspect ratio (cover)
+        if img.get_width() < img.get_height():
+            ratio = size / img.get_width()
+        else:
+            ratio = size / img.get_height()
         
-        # Fonts
-        self.font_big = pygame.font.SysFont("Segoe UI", 80, bold=True)
-        self.font_small = pygame.font.SysFont("Segoe UI", 30)
-
-    def update(self):
-        self.life -= 1
-        # Gentle float up
-        self.y_offset -= 0.5
-        return self.life > 0
-
-    def draw(self, surf, center_rect):
-        if self.life <= 0: return
+        scaled = pygame.transform.smoothscale(img, (int(img.get_width()*ratio), int(img.get_height()*ratio)))
         
-        cx, cy = center_rect.centerx, center_rect.centery
+        # Center crop
+        offset_x = (scaled.get_width() - size) // 2
+        offset_y = (scaled.get_height() - size) // 2
         
-        # Fade out logic
-        alpha = 255
-        if self.life < 30: alpha = int((self.life / 30) * 255)
+        # Mask
+        pygame.draw.circle(surf, (255, 255, 255), (size//2, size//2), size//2)
+        surf.blit(scaled, (-offset_x, -offset_y), special_flags=pygame.BLEND_RGBA_MIN)
         
-        # 1. Main Text
-        txt = self.font_big.render(self.text, True, self.color)
-        txt.set_alpha(alpha)
+        # Add a subtle inner border
+        pygame.draw.circle(surf, (255,255,255, 30), (size//2, size//2), size//2, 2)
         
-        # Shadow
-        shd = self.font_big.render(self.text, True, (0,0,0))
-        shd.set_alpha(alpha // 2)
+    except Exception as e:
+        # Fallback placeholder
+        pygame.draw.circle(surf, (50, 50, 60), (size//2, size//2), size//2)
+        f = pygame.font.SysFont("Arial", 40)
+        t = f.render("?", True, (100,100,100))
+        surf.blit(t, t.get_rect(center=(size//2, size//2)))
+    
+    return surf
+
+# --- UI CLASSES ---
+
+class LogFeed:
+    """A custom, minimal log rendering system (Replace UITextBox)."""
+    def __init__(self, x, y, w, h):
+        self.rect = pygame.Rect(x, y, w, h)
+        self.messages = [] # List of (text_surf, alpha, y_pos)
+        self.font = pygame.font.SysFont("Consolas", 14)
+
+    def add(self, text, color=C_TEXT_MAIN):
+        # Render text immediately
+        surf = self.font.render(text, True, color)
+        self.messages.insert(0, {"surf": surf, "alpha": 255, "life": 300})
+        if len(self.messages) > 12: self.messages.pop()
+
+    def draw(self, screen):
+        # Draw messages from bottom up
+        curr_y = self.rect.bottom - 25
         
-        # Position
-        pos_x = cx - txt.get_width() // 2
-        pos_y = cy - txt.get_height() // 2 + self.y_offset
-        
-        surf.blit(shd, (pos_x + 4, pos_y + 4))
-        surf.blit(txt, (pos_x, pos_y))
-        
-        # 2. Subtext
-        if self.subtext:
-            sub = self.font_small.render(self.subtext, True, C_WHITE)
-            sub.set_alpha(alpha)
-            surf.blit(sub, (cx - sub.get_width()//2, pos_y + 90))
-
-class Particle:
-    """Small floating numbers for Damage/Heal."""
-    def __init__(self, x, y, text, color):
-        self.pos = [x, y]
-        self.vel = [random.uniform(-1, 1), -2]
-        self.text = text
-        self.color = color
-        self.life = 60
-        self.font = pygame.font.SysFont("Verdana", 24, bold=True)
-
-    def update(self):
-        self.pos[0] += self.vel[0]
-        self.pos[1] += self.vel[1]
-        self.life -= 1
-        return self.life > 0
-
-    def draw(self, surf):
-        alpha = min(255, self.life * 5)
-        t = self.font.render(self.text, True, self.color)
-        t.set_alpha(alpha)
-        surf.blit(t, (self.pos[0], self.pos[1]))
-
-class Dice:
-    def __init__(self):
-        self.rect = pygame.Rect(0, 0, 120, 120)
-        self.val = 1
-        self.rolling = False
-        self.anim_timer = 0
-        self.target_val = 1
-        self.color = C_ACCENT
-        self.shake_offset = (0,0)
-
-    def reposition(self, cx, cy):
-        self.rect.center = (cx, cy)
-
-    def roll(self, target):
-        self.rolling = True
-        self.anim_timer = 40
-        self.target_val = target
-
-    def update(self):
-        if self.rolling:
-            self.anim_timer -= 1
-            # Vibrate effect
-            self.shake_offset = (random.randint(-3, 3), random.randint(-3, 3))
+        for msg in self.messages:
+            if curr_y < self.rect.top: break
             
-            if self.anim_timer % 4 == 0:
-                self.val = random.randint(1, 6)
-                
-            if self.anim_timer <= 0:
-                self.rolling = False
-                self.val = self.target_val
-                self.shake_offset = (0,0)
-                return True
-        return False
-
-    def draw(self, surf, hover):
-        cx = self.rect.centerx + self.shake_offset[0]
-        cy = self.rect.centery + self.shake_offset[1]
-        size = 110
-        
-        # Dynamic Color
-        col = self.color
-        if hover: col = (100, 200, 255)
-        if self.rolling: col = C_WHITE
-
-        # Draw Rounded Square (Squircle) - Modern Look
-        r = pygame.Rect(0, 0, size, size)
-        r.center = (cx, cy)
-        pygame.draw.rect(surf, col, r, border_radius=20)
-        
-        # Border
-        pygame.draw.rect(surf, C_BG, r, width=3, border_radius=20)
-
-        # Pips (Dots)
-        pip_col = C_BG
-        pip_r = 7
-        offset = 28
-        
-        dots = []
-        if self.val == 1: dots = [(0,0)]
-        elif self.val == 2: dots = [(-1,-1), (1,1)]
-        elif self.val == 3: dots = [(-1,-1), (0,0), (1,1)]
-        elif self.val == 4: dots = [(-1,-1), (1,-1), (-1,1), (1,1)]
-        elif self.val == 5: dots = [(-1,-1), (1,-1), (-1,1), (1,1), (0,0)]
-        elif self.val == 6: dots = [(-1,-1), (1,-1), (-1,1), (1,1), (-1,0), (1,0)]
-
-        for dx, dy in dots:
-            draw_circle(surf, pip_col, (cx + dx*offset, cy + dy*offset), pip_r)
-
-        # "ROLL" Text hint
-        if not self.rolling and hover:
-            f = pygame.font.SysFont("Verdana", 12, bold=True)
-            t = f.render("CLICK", True, C_GREY)
-            surf.blit(t, t.get_rect(center=(cx, r.bottom + 15)))
+            # Fade logic
+            msg['life'] -= 1
+            if msg['life'] < 50: msg['alpha'] = int((msg['life']/50) * 255)
+            
+            s = msg['surf'].copy()
+            s.set_alpha(msg['alpha'])
+            screen.blit(s, (self.rect.x, curr_y))
+            curr_y -= 22 # Line height
 
 class Player:
     def __init__(self, idx):
         self.idx = idx
-        profile = PLAYER_PROFILES.get(idx, {})
-        self.name = profile.get("name", f"P{idx + 1}")
+        data = PLAYER_PROFILES.get(idx, {})
+        self.name = data.get("name", f"P{idx}")
         self.hp = 20
         self.max_hp = 20
         self.vp = 0
         self.alive = True
+        
+        # Visuals
         self.pos = (0,0)
-        self.rect = pygame.Rect(0,0,100,100)
+        self.base_size = 110
+        self.rect = pygame.Rect(0,0, self.base_size, self.base_size)
         self.scale = 1.0
+        self.avatar_surf = load_and_crop_avatar(data.get("img", ""), self.base_size)
         
-        # Load player image
-        self.image = None
-        self.image_original = None
-        image_path = profile.get("image")
-        if image_path and Path(image_path).exists():
-            try:
-                self.image_original = pygame.image.load(image_path)
-            except Exception as e:
-                print(f"Error loading image for {self.name}: {e}")
-        
-        # Load audio
-        self.audio_path = profile.get("audio")
+        # Audio
+        audio_path = AUD_DIR / data.get("audio", "")
+        self.sound = None
+        if audio_path.exists():
+            try: self.sound = pygame.mixer.Sound(audio_path)
+            except: pass
 
     def calculate_position(self, center, radius):
         angle = -90 + (self.idx * (360 / 5))
         rad = math.radians(angle)
         self.pos = (center[0] + radius * math.cos(rad), center[1] + radius * math.sin(rad))
-        self.rect = pygame.Rect(self.pos[0]-50, self.pos[1]-50, 100, 100)
+        self.rect.center = self.pos
 
-    def take_dmg(self, amount, r_num):
-        if not self.alive: return False
-        self.hp -= amount
-        if self.hp <= 0:
-            self.hp = 0
-            self.alive = False
-            return True
-        return False
+    def update(self, is_hovered):
+        target = 1.1 if is_hovered else 1.0
+        self.scale += (target - self.scale) * 0.15
 
-    def update(self, hover):
-        # Smooth scale on hover
-        target_scale = 1.15 if hover else 1.0
-        self.scale += (target_scale - self.scale) * 0.2
-        
-        # Scale and cache image at current scale
-        if self.image_original:
-            size = int(100 * self.scale)
-            self.image = pygame.transform.scale(self.image_original, (size, size))
-
-    def draw(self, surf, is_active, is_target, hover):
-        x, y = self.pos
+    def draw(self, surf, is_active, is_target):
+        cx, cy = self.pos
         s = self.scale
         
-        # 1. Selection Ring (If targeted)
-        if is_target:
-            pulse = (math.sin(pygame.time.get_ticks() * 0.01) + 1) * 2
-            draw_ring(surf, C_GOLD, (x, y), 65*s + pulse, 2)
+        # 1. State Colors
+        border_col = C_LINE
+        if not self.alive: 
+            border_col = (30, 30, 30)
+            self.scale = 0.9 # Shrink dead
+        elif is_active: border_col = C_ACCENT
+        elif is_target: border_col = C_DANGER
 
-        # 2. Active Turn Indicator (Glow behind)
-        if is_active:
-             draw_circle(surf, (40, 40, 50), (x, y), 65*s)
+        # 2. Draw Active Pulse / Glow
+        if is_active and self.alive:
+            pulse = 60 + math.sin(pygame.time.get_ticks() * 0.005) * 5
+            draw_smooth_circle(surf, (*C_ACCENT, 30), (cx, cy), pulse * s)
 
-        # 3. Avatar Circle / Image
-        if self.image:
-            # Draw image as circular avatar
-            img_rect = self.image.get_rect(center=(x, y))
-            # Create circular mask
-            mask_surf = pygame.Surface((img_rect.width, img_rect.height), pygame.SRCALPHA)
-            pygame.draw.circle(mask_surf, (255, 255, 255, 255), 
-                             (img_rect.width//2, img_rect.height//2), img_rect.width//2)
-            img_copy = self.image.copy()
-            img_copy.blit(mask_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
-            surf.blit(img_copy, img_rect)
-        else:
-            # Fallback to circle if no image
-            base_col = (50, 50, 55)
-            if not self.alive: base_col = (30, 30, 30)
-            draw_circle(surf, base_col, (x, y), 50*s)
+        # 3. Avatar
+        if self.avatar_surf:
+            final_size = int(self.base_size * s)
+            scaled = pygame.transform.smoothscale(self.avatar_surf, (final_size, final_size))
+            
+            # Grayscale if dead
+            if not self.alive:
+                grayscale = pygame.Surface(scaled.get_size()).convert_alpha()
+                grayscale.fill((30,30,30))
+                scaled.blit(grayscale, (0,0), special_flags=pygame.BLEND_RGBA_MULT)
+                
+            r = scaled.get_rect(center=(cx, cy))
+            surf.blit(scaled, r)
+            
+            # Ring Border
+            pygame.draw.circle(surf, border_col, (cx, cy), (final_size//2) + 2, 2)
 
-        # 4. Health Ring (The Minimalist Health Bar)
+        # 4. Health Bar (Underneath)
         if self.alive:
-            hp_pct = self.hp / self.max_hp
-            hp_col = C_SUCCESS if hp_pct > 0.4 else C_DANGER
-            # Draw faint background ring
-            pygame.draw.circle(surf, (30,30,30), (x, y), 50*s, width=4)
-            # Draw progress arc
-            draw_arc_bar(surf, hp_col, (x,y), 50*s, 4, hp_pct)
+            bar_w = 80 * s
+            bar_h = 6
+            bar_rect = pygame.Rect(cx - bar_w/2, cy + 65*s, bar_w, bar_h)
+            
+            # Background
+            pygame.draw.rect(surf, (30,33,40), bar_rect, border_radius=3)
+            # Foreground
+            pct = max(0, self.hp / self.max_hp)
+            fill_rect = pygame.Rect(cx - bar_w/2, cy + 65*s, bar_w * pct, bar_h)
+            col = C_SUCCESS if pct > 0.4 else C_DANGER
+            pygame.draw.rect(surf, col, fill_rect, border_radius=3)
 
-        # 5. Text (Name & VP)
-        font_name = pygame.font.SysFont("Segoe UI", int(18*s), bold=True)
-        col_name = C_WHITE if self.alive else C_GREY
-        t_name = font_name.render(self.name, True, col_name)
-        surf.blit(t_name, t_name.get_rect(center=(x, y - 65*s)))
+        # 5. Text Stats
+        font = pygame.font.SysFont("Consolas", int(12*s), bold=True)
         
-        font_vp = pygame.font.SysFont("Verdana", int(14*s), bold=True)
-        t_vp = font_vp.render(f"{self.vp} VP", True, C_GOLD)
-        surf.blit(t_vp, t_vp.get_rect(center=(x, y + 65*s)))
+        # Name (Top)
+        name_surf = font.render(self.name, True, C_TEXT_MAIN if self.alive else C_TEXT_DIM)
+        surf.blit(name_surf, name_surf.get_rect(center=(cx, cy - 70*s)))
+        
+        # Stats (Bottom)
+        if self.alive:
+            stat_surf = font.render(f"{self.hp}HP | {self.vp}VP", True, C_TEXT_DIM)
+            surf.blit(stat_surf, stat_surf.get_rect(center=(cx, cy + 80*s)))
+        else:
+            dead_surf = font.render("ELIMINATED", True, C_DANGER)
+            surf.blit(dead_surf, dead_surf.get_rect(center=(cx, cy + 80*s)))
 
-        # 6. Dead Marker
-        if not self.alive:
-            pygame.draw.line(surf, C_DANGER, (x-20, y-20), (x+20, y+20), 4)
-            pygame.draw.line(surf, C_DANGER, (x+20, y-20), (x-20, y+20), 4)
+class Dice:
+    def __init__(self):
+        self.rect = pygame.Rect(0,0, 100, 100)
+        self.val = 6
+        self.rolling = False
+        self.timer = 0
+        self.target = 1
+        self.offset = (0,0)
 
-# --- GAME ENGINE ---
+    def roll(self, target):
+        self.rolling = True
+        self.timer = 40
+        self.target = target
+
+    def update(self):
+        if self.rolling:
+            self.timer -= 1
+            self.offset = (random.randint(-2,2), random.randint(-2,2))
+            if self.timer % 5 == 0: self.val = random.randint(1,6)
+            if self.timer <= 0:
+                self.rolling = False
+                self.val = self.target
+                self.offset = (0,0)
+                return True
+        return False
+
+    def draw(self, surf, hover):
+        cx, cy = self.rect.centerx + self.offset[0], self.rect.centery + self.offset[1]
+        sz = 90 if not hover else 95 # Subtle hover grow
+        
+        # Shadow
+        shadow_rect = pygame.Rect(0,0, sz, sz)
+        shadow_rect.center = (cx, cy + 5)
+        pygame.draw.rect(surf, (10,10,12), shadow_rect, border_radius=18)
+
+        # Body
+        main_rect = pygame.Rect(0,0, sz, sz)
+        main_rect.center = (cx, cy)
+        col = C_TEXT_MAIN if not self.rolling else C_ACCENT
+        pygame.draw.rect(surf, col, main_rect, border_radius=18)
+
+        # Pips
+        pip_col = C_BG
+        pip_sz = 8
+        space = 24
+        pips = []
+        if self.val == 1: pips = [(0,0)]
+        elif self.val == 2: pips = [(-1,-1), (1,1)]
+        elif self.val == 3: pips = [(-1,-1), (0,0), (1,1)]
+        elif self.val == 4: pips = [(-1,-1), (1,-1), (-1,1), (1,1)]
+        elif self.val == 5: pips = [(-1,-1), (1,-1), (-1,1), (1,1), (0,0)]
+        elif self.val == 6: pips = [(-1,-1), (1,-1), (-1,1), (1,1), (-1,0), (1,0)]
+
+        for dx, dy in pips:
+            pygame.draw.circle(surf, pip_col, (cx + dx*space, cy + dy*space), pip_sz)
 
 class Game:
     def __init__(self):
         self.screen = pygame.display.set_mode((DEFAULT_W, DEFAULT_H), pygame.RESIZABLE)
-        pygame.display.set_caption("DO or DICE: Minimal")
+        pygame.display.set_caption("DO OR DICE // MINIMAL")
         self.clock = pygame.time.Clock()
         self.manager = pygame_gui.UIManager((DEFAULT_W, DEFAULT_H))
         
-        self.init_game()
-        
-    def init_game(self):
+        self.voice_channel = pygame.mixer.Channel(0)
         self.players = [Player(i) for i in range(5)]
         self.dice = Dice()
-        self.particles = []
-        self.notification = None # The active "Toast" message
+        self.log_feed = None
+        
         self.round = 1
         self.turn = 0
         self.state = "IDLE"
+        self.prompt = "WELCOME"
+        self.sub_prompt = "Click the Dice to Start"
         self.payload = None
-        self.current_audio = None  # Track currently playing audio
-        self.last_played_player = -1  # Track which player's audio is currently playing
+        self.particles = []
+        self.buttons = []
         
-        self.prompt = "PLAYER 1"
-        self.sub_prompt = "Click Dice to Roll"
-        self.log_history = []
-        self.btn_opts = []
+        self.layout(DEFAULT_W, DEFAULT_H)
+        self.add_log("System Ready. Game Initialized.", C_SUCCESS)
+        self.play_audio()
 
-        # Layout
-        self.arena_rect = pygame.Rect(0,0,0,0)
-        self.sidebar_rect = pygame.Rect(0,0,0,0)
-        
-        self.log_box = UITextBox("", pygame.Rect(0,0,100,100), self.manager)
-        self.resize_layout(DEFAULT_W, DEFAULT_H)
-        self.log("System Ready.")
-        
-        # Auto-play Player 1's audio at game start
-        self.play_current_player_audio()
-
-    def resize_layout(self, w, h):
+    def layout(self, w, h):
         self.manager.set_window_resolution((w, h))
+        self.w, self.h = w, h
         
-        sb_width = 320
-        ar_width = w - sb_width
+        # Sidebar is fixed 300px on the right
+        self.sidebar_rect = pygame.Rect(w - 320, 0, 320, h)
+        self.arena_rect = pygame.Rect(0, 0, w - 320, h)
         
-        self.arena_rect = pygame.Rect(0, 0, ar_width, h)
-        self.sidebar_rect = pygame.Rect(ar_width, 0, sb_width, h)
-
+        # Positioning Players
         cx, cy = self.arena_rect.center
-        rad = min(ar_width, h) * 0.32
+        rad = min(self.arena_rect.width, self.arena_rect.height) * 0.35
         for p in self.players: p.calculate_position((cx, cy), rad)
-        self.dice.reposition(cx, cy)
+        self.dice.rect.center = (cx, cy)
         
-        # UI Positioning
-        self.log_box.set_relative_position((self.sidebar_rect.x + 20, 140))
-        self.log_box.set_dimensions((self.sidebar_rect.width - 40, h - 250))
-        self.refresh_buttons()
+        # Log Feed in Sidebar
+        self.log_feed = LogFeed(self.sidebar_rect.x + 20, h - 300, 280, 280)
 
-    def refresh_buttons(self):
-        bx = self.sidebar_rect.x + 20
-        by = self.sidebar_rect.bottom - 80
-        bw = (self.sidebar_rect.width - 50) // 2
+    def add_log(self, text, col=C_TEXT_MAIN):
+        if self.log_feed: self.log_feed.add(text, col)
+
+    def create_buttons(self, labels, actions):
+        """Creates minimal styling buttons manually or via GUI manager."""
+        # Clean old buttons
+        for b in self.buttons: b.kill()
+        self.buttons = []
         
-        for i, btn in enumerate(self.btn_opts):
-            btn.set_relative_position((bx + i*(bw+10), by))
-            btn.set_dimensions((bw, 60))
+        start_y = 150
+        for i, lbl in enumerate(labels):
+            rect = pygame.Rect(self.sidebar_rect.x + 20, start_y + (i * 50), 280, 40)
+            btn = pygame_gui.elements.UIButton(relative_rect=rect, text=lbl, manager=self.manager)
+            btn.action = actions[i]
+            self.buttons.append(btn)
 
-    def log(self, text):
-        self.log_history.append(text)
-        if len(self.log_history) > 30: self.log_history.pop(0)
-        self.log_box.set_text("<br>".join(self.log_history))
+    def play_audio(self):
+        p = self.players[self.turn]
+        if self.voice_channel.get_busy(): self.voice_channel.stop()
+        if p.sound: self.voice_channel.play(p.sound)
 
-    def show_notification(self, title, sub, color):
-        self.notification = Notification(title, sub, color)
-
-    def get_active(self): return self.players[self.turn]
-    
-    def play_current_player_audio(self):
-        """Play audio for the current active player."""
-        p = self.get_active()
-        
-        # Only play if not already playing this player's audio
-        if self.last_played_player != p.idx:
-            self.last_played_player = p.idx
-            
-            # Stop previous audio
-            if self.current_audio:
-                pygame.mixer.Sound.stop(self.current_audio)
-                self.current_audio = None
-            
-            # Play current player's audio
-            if p.audio_path and Path(p.audio_path).exists():
-                try:
-                    self.current_audio = pygame.mixer.Sound(p.audio_path)
-                    self.current_audio.play()
-                except Exception as e:
-                    print(f"Error playing audio for {p.name}: {e}")
-
-    # --- ACTION LOGIC ---
-    def start_roll(self):
+    # --- LOGIC ---
+    def roll_dice(self):
         self.state = "ROLLING"
-        p = self.get_active()
+        p = self.players[self.turn]
+        self.play_audio()
+        
         roll = random.randint(1, 6)
         
-        # Rules Dictionary
-        rules_live = {
-            1: ("BACKFIRE", "Take 3 DMG", C_DANGER),
-            2: ("JAB", "Deal 2 DMG", C_WHITE),
-            3: ("STEAL", "Steal 1 VP", C_PURPLE),
-            4: ("STRIKE", "Deal 4 DMG", C_WHITE),
-            5: ("RECOVER", "Heal 3 HP", C_SUCCESS),
-            6: ("POWER", "Ultimate Choice", C_GOLD)
+        # Rules Logic
+        live_rules = {
+            1: ("CRITICAL FAIL", "Take 3 DMG", C_DANGER, "self_dmg", 3),
+            2: ("QUICK JAB", "Deal 2 DMG", C_TEXT_MAIN, "target_dmg", 2),
+            3: ("THIEF", "Steal 1 VP", C_PURPLE, "steal", 1),
+            4: ("HEAVY STRIKE", "Deal 4 DMG", C_TEXT_MAIN, "target_dmg", 4),
+            5: ("REGENERATE", "Heal 3 HP", C_SUCCESS, "heal", 3),
+            6: ("ULTIMATE", "Choice: DMG or VP", C_GOLD, "choice", 0)
         }
-        rules_dead = {
-            1: ("MIST", "Nothing Happens", C_GREY),
-            2: ("MIST", "Nothing Happens", C_GREY),
-            3: ("BOON", "Buff Player", C_SUCCESS),
-            4: ("BOON", "Buff Player", C_SUCCESS),
-            5: ("CURSE", "Debuff Player", C_DANGER),
-            6: ("CURSE", "Debuff Player", C_DANGER)
+        dead_rules = {
+            1: ("VOID MIST", "No Effect", C_TEXT_DIM, "none", 0),
+            2: ("VOID MIST", "No Effect", C_TEXT_DIM, "none", 0),
+            3: ("SPIRIT BLESS", "Buff a Player", C_SUCCESS, "buff", 0),
+            4: ("SPIRIT BLESS", "Buff a Player", C_SUCCESS, "buff", 0),
+            5: ("HAUNT", "Curse a Player", C_DANGER, "curse", 0),
+            6: ("HAUNT", "Curse a Player", C_DANGER, "curse", 0)
         }
         
-        data = rules_live[roll] if p.alive else rules_dead[roll]
+        r = live_rules[roll] if p.alive else dead_rules[roll]
         
         self.dice.roll(roll)
-        self.prompt = "ROLLING..."
-        self.sub_prompt = ""
-        self.payload = {"roll": roll, "title": data[0], "sub": data[1], "col": data[2]}
+        self.prompt = r[0]
+        self.sub_prompt = r[1]
+        self.payload = {"type": r[3], "val": r[4], "color": r[2]}
 
     def finish_roll(self):
-        p = self.get_active()
-        d = self.payload
-        roll = d['roll']
+        p = self.players[self.turn]
+        act = self.payload['type']
+        val = self.payload['val']
+        col = self.payload['color']
         
-        # 1. TRIGGER BIG VISUAL NOTIFICATION
-        self.show_notification(d['title'], d['sub'], d['col'])
+        self.add_log(f"{p.name} rolled {self.dice.val}", col)
         
-        self.log(f"<b>{p.name}</b> rolled {roll}: {d['title']}")
-        
-        if p.alive:
-            if roll == 1: # Backfire
-                self.particles.append(Particle(p.pos[0], p.pos[1], "-3", C_DANGER))
-                if p.take_dmg(3, self.round): self.log(f"{p.name} Died!")
-                self.next_turn()
-            elif roll == 5: # Recover
-                p.hp = min(p.hp+3, p.max_hp)
-                self.particles.append(Particle(p.pos[0], p.pos[1], "+3", C_SUCCESS))
-                self.next_turn()
-            elif roll == 2: self.set_target("JAB", "Select Enemy (-2 HP)", "dmg", 2)
-            elif roll == 3: self.set_target("STEAL", "Select Enemy (-1 VP)", "steal")
-            elif roll == 4: self.set_target("STRIKE", "Select Enemy (-4 HP)", "dmg", 4)
-            elif roll == 6: self.set_choice("POWER MOVE", "DMG (-6)", "VP (+3)", "pdmg", "pvp")
-        else:
-            if roll <= 2: self.next_turn()
-            elif roll <= 4: self.set_target("BOON", "Buff Living", "boon", fallen=True)
-            else: self.set_target("CURSE", "Debuff Living", "curse", fallen=True)
-
-    def set_target(self, title, sub, act, val=0, fallen=False):
-        self.state = "TARGETING"
-        self.prompt = title
-        self.sub_prompt = sub
-        self.payload = {"act": act, "val": val, "fallen": fallen}
-
-    def resolve_target(self, target):
-        actor = self.get_active()
-        data = self.payload
-        
-        # Validation
-        if data.get('fallen'):
-            if not target.alive: return
-        else:
-            if not target.alive or target == actor: return
-
-        # Execute
-        act = data['act']
-        val = data.get('val', 0)
-        
-        if act == "dmg":
-            self.particles.append(Particle(target.pos[0], target.pos[1], f"-{val}", C_DANGER))
-            if target.take_dmg(val, self.round):
-                self.log(f"{target.name} Eliminated!")
-                self.show_notification("ELIMINATED", target.name, C_DANGER)
-                if actor.alive: actor.vp += 2
+        if act == "self_dmg":
+            p.hp = max(0, p.hp - val)
+            self.add_particle(p.pos, f"-{val}", C_DANGER)
+            if p.hp == 0: 
+                p.alive = False
+                self.add_log(f"{p.name} DIED!", C_DANGER)
             self.next_turn()
+        
+        elif act == "heal":
+            p.hp = min(p.max_hp, p.hp + val)
+            self.add_particle(p.pos, f"+{val}", C_SUCCESS)
+            self.next_turn()
+            
+        elif act == "target_dmg":
+            self.state = "TARGET"
+            self.sub_prompt = f"Select Target for {val} DMG"
             
         elif act == "steal":
-            amt = 1 if target.vp > 0 else 0
-            target.vp -= amt; actor.vp += amt
-            self.particles.append(Particle(target.pos[0], target.pos[1], f"-{amt} VP", C_DANGER))
-            self.particles.append(Particle(actor.pos[0], actor.pos[1], f"+{amt} VP", C_GOLD))
-            self.next_turn()
+            self.state = "TARGET"
+            self.sub_prompt = "Select Target to Steal VP"
             
-        elif act == "boon":
-            actor.last_target = target
-            self.set_choice(f"Bless {target.name}", "+2 HP", "+1 VP", 
-                {"act": "app", "t": target, "m": "hp"}, {"act": "app", "t": target, "m": "vp"})
-                
+        elif act == "choice":
+            self.state = "CHOICE"
+            self.create_buttons(["DEAL 6 DMG", "GAIN 3 VP"], ["dmg_6", "vp_3"])
+            
+        elif act == "buff":
+            self.state = "TARGET_FALLEN"
+            self.sub_prompt = "Select Alive Player to Bless"
+            
         elif act == "curse":
-            actor.last_target = target
-            self.set_choice(f"Curse {target.name}", "-2 HP", "-1 VP",
-                {"act": "neg", "t": target, "m": "hp"}, {"act": "neg", "t": target, "m": "vp"})
-
-    def set_choice(self, title, l1, l2, d1, d2):
-        self.state = "CHOOSING"
-        self.prompt = title
-        self.sub_prompt = "Select Option ->"
-        b1 = UIButton(pygame.Rect(0,0,100,50), l1, self.manager)
-        b1.action = d1
-        b2 = UIButton(pygame.Rect(0,0,100,50), l2, self.manager)
-        b2.action = d2
-        self.btn_opts = [b1, b2]
-        self.refresh_buttons()
-
-    def resolve_choice(self, data):
-        for b in self.btn_opts: b.kill()
-        self.btn_opts = []
-        actor = self.get_active()
-
-        if data == "pvp":
-            actor.vp += 3
-            self.particles.append(Particle(actor.pos[0], actor.pos[1], "+3 VP", C_GOLD))
-            self.next_turn()
-        elif data == "pdmg":
-            self.set_target("CRITICAL", "Select Target (-6 HP)", "dmg", 6)
-        elif isinstance(data, dict):
-            t = data['t']
-            if data['act'] == "app":
-                if data['m'] == "hp": t.hp += 2; txt="+2 HP"; col=C_SUCCESS
-                else: t.vp += 1; txt="+1 VP"; col=C_GOLD
-            else:
-                if data['m'] == "hp": t.take_dmg(2, self.round); txt="-2 HP"; col=C_DANGER
-                else: t.vp = max(0, t.vp-1); txt="-1 VP"; col=C_DANGER
+            self.state = "TARGET_FALLEN"
+            self.sub_prompt = "Select Alive Player to Curse"
             
-            self.particles.append(Particle(t.pos[0], t.pos[1], txt, col))
+        elif act == "none":
             self.next_turn()
+
+    def handle_target(self, target):
+        actor = self.players[self.turn]
+        
+        # Validate selection
+        if self.state == "TARGET":
+            if not target.alive or target == actor: return
+        elif self.state == "TARGET_FALLEN":
+            if not target.alive: return
+
+        act = self.payload['type']
+        val = self.payload['val']
+
+        if act == "target_dmg" or (act == "choice" and val == 6):
+            target.hp = max(0, target.hp - val)
+            self.add_particle(target.pos, f"-{val}", C_DANGER)
+            if target.hp == 0:
+                target.alive = False
+                self.add_log(f"{target.name} ELIMINATED", C_DANGER)
+                if actor.alive: actor.vp += 2
+        
+        elif act == "steal":
+            amt = 1 if target.vp > 0 else 0
+            target.vp -= amt
+            actor.vp += amt
+            self.add_particle(target.pos, f"-{amt}VP", C_DANGER)
+            self.add_particle(actor.pos, f"+{amt}VP", C_GOLD)
+            
+        elif act == "buff":
+            target.hp = min(target.max_hp, target.hp + 2)
+            self.add_particle(target.pos, "+2 HP", C_SUCCESS)
+            
+        elif act == "curse":
+            target.hp = max(0, target.hp - 2)
+            self.add_particle(target.pos, "-2 HP", C_DANGER)
+
+        self.next_turn()
+
+    def handle_choice(self, action_id):
+        actor = self.players[self.turn]
+        
+        for b in self.buttons: b.kill()
+        self.buttons = []
+        
+        if action_id == "vp_3":
+            actor.vp += 3
+            self.add_particle(actor.pos, "+3 VP", C_GOLD)
+            self.next_turn()
+        elif action_id == "dmg_6":
+            self.state = "TARGET"
+            self.payload['type'] = "choice"
+            self.payload['val'] = 6
+            self.sub_prompt = "Select Target for 6 DMG"
 
     def next_turn(self):
         self.turn += 1
-        if self.turn >= 5: self.end_round()
-        else: self.check_state()
+        if self.turn >= 5:
+            self.round += 1
+            self.turn = 0
+            self.add_log(f"--- ROUND {self.round} START ---", C_TEXT_DIM)
+            # Living Bonus
+            alive_count = 0
+            for p in self.players:
+                if p.alive:
+                    p.vp += 1
+                    alive_count += 1
+            if alive_count <= 1 or self.round > MAX_ROUNDS:
+                self.game_over()
+                return
 
-    def end_round(self):
-        self.show_notification(f"ROUND {self.round} END", "Survivors gain +1 VP", C_WHITE)
-        alive = 0
-        for p in self.players:
-            if p.alive:
-                p.vp += 1
-                self.particles.append(Particle(p.pos[0], p.pos[1], "+1 VP", C_GOLD))
-                alive += 1
-        self.round += 1
-        self.turn = 0
-        if alive <= 1 or self.round > MAX_ROUNDS: self.game_over()
-        else: self.check_state()
-
-    def check_state(self):
-        alive = [p for p in self.players if p.alive]
-        if len(alive) <= 1: self.game_over()
-        else:
-            p = self.get_active()
-            self.state = "IDLE"
-            self.prompt = f"{p.name}'S TURN"
-            self.sub_prompt = "Click Dice to Roll"
-            self.dice.color = C_ACCENT if p.alive else C_GREY
-            
-            # Auto-play current player's audio
-            self.play_current_player_audio()
+        self.state = "IDLE"
+        active = self.players[self.turn]
+        
+        # Skip dead players roll logic usually, but keep them for 'ghost' turns
+        self.dice.val = 6 # Reset dice visual
+        self.prompt = f"{active.name}'S TURN"
+        self.sub_prompt = "Click Dice to Roll"
+        
+        if not active.alive:
+            self.sub_prompt = "Ghost Turn - Click Dice"
+        
+        self.play_audio()
 
     def game_over(self):
-        # Stop all audio
-        if self.current_audio:
-            pygame.mixer.Sound.stop(self.current_audio)
-            self.current_audio = None
-        
         self.state = "GAME_OVER"
         self.prompt = "GAME OVER"
-        self.sub_prompt = "View Results in Sidebar"
-        self.show_notification("GAME OVER", "Check Sidebar for Winner", C_GOLD)
+        self.sub_prompt = "See Standings"
+        self.create_buttons(["RESTART GAME"], ["restart"])
         
+        # Sort winners
         ranked = sorted(self.players, key=lambda x: (x.alive, x.vp, x.hp), reverse=True)
-        res = "<br><font size=6 color='#FFD700'><b>STANDINGS</b></font><br>"
+        self.add_log("--- FINAL STANDINGS ---", C_GOLD)
         for i, p in enumerate(ranked):
-            c = "#FFFFFF" if p.alive else "#666666"
-            res += f"{i+1}. <font color='{c}'>{p.name}</font> : {p.vp} VP<br>"
-        self.log_box.set_text(res)
-        
-        b = UIButton(pygame.Rect(0,0,100,50), "RESTART", self.manager)
-        b.action = "restart"
-        self.btn_opts = [b]
-        self.refresh_buttons()
+            status = "ALIVE" if p.alive else "DEAD"
+            self.add_log(f"#{i+1} {p.name}: {p.vp}VP ({status})", C_TEXT_MAIN)
+
+    def add_particle(self, pos, text, col):
+        self.particles.append({"pos": list(pos), "vel": [random.uniform(-1,1), -2], "text": text, "col": col, "life": 60})
 
     def run(self):
+        font_big = pygame.font.SysFont("Consolas", 32, bold=True)
+        font_small = pygame.font.SysFont("Consolas", 14)
+        font_particle = pygame.font.SysFont("Arial", 20, bold=True)
+
         while True:
             dt = self.clock.tick(FPS) / 1000.0
-            
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT: pygame.quit(); sys.exit()
-                if event.type == pygame.VIDEORESIZE: self.resize_layout(event.w, event.h)
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if self.arena_rect.collidepoint(event.pos):
-                        if self.state == "IDLE" and self.dice.rect.collidepoint(event.pos):
-                            self.start_roll()
-                        elif self.state == "TARGETING":
-                             for p in self.players:
-                                if p.rect.collidepoint(event.pos): self.resolve_target(p)
-                if event.type == pygame_gui.UI_BUTTON_PRESSED:
-                    if hasattr(event.ui_element, 'action'):
-                        if event.ui_element.action == "restart": self.init_game()
-                        else: self.resolve_choice(event.ui_element.action)
-                self.manager.process_events(event)
-            
-            # Update
-            if self.state == "ROLLING": 
-                if self.dice.update(): self.finish_roll()
-            if self.notification:
-                if not self.notification.update(): self.notification = None
-            self.particles = [p for p in self.particles if p.update()]
-            
             mx, my = pygame.mouse.get_pos()
+            
+            # --- EVENTS ---
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT: sys.exit()
+                if event.type == pygame.VIDEORESIZE: self.layout(event.w, event.h)
+                
+                if event.type == pygame_gui.UI_BUTTON_PRESSED:
+                    if event.ui_element.action == "restart": 
+                        self.__init__() # Cheat restart
+                    else:
+                        self.handle_choice(event.ui_element.action)
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.state == "IDLE" and self.dice.rect.collidepoint((mx,my)):
+                        self.roll_dice()
+                    elif "TARGET" in self.state:
+                        for p in self.players:
+                            if p.rect.collidepoint((mx,my)): self.handle_target(p)
+
+                self.manager.process_events(event)
+
+            # --- UPDATES ---
+            if self.state == "ROLLING":
+                if self.dice.update(): self.finish_roll()
+            
             for p in self.players: p.update(p.rect.collidepoint((mx,my)))
             self.manager.update(dt)
-            
-            # Draw
+
+            # --- DRAW ---
             self.screen.fill(C_BG)
             
-            # Sidebar
+            # 1. Sidebar Background
             pygame.draw.rect(self.screen, C_SIDEBAR, self.sidebar_rect)
-            
-            # Arena Connections
-            if self.state != "GAME_OVER":
-                cx, cy = self.arena_rect.center
-                pygame.draw.line(self.screen, C_PANEL, (cx, cy), self.get_active().pos, 2)
+            pygame.draw.line(self.screen, C_LINE, (self.sidebar_rect.x, 0), (self.sidebar_rect.x, self.h))
 
-            # Dice
-            dice_hover = self.dice.rect.collidepoint((mx,my)) and self.state == "IDLE"
-            self.dice.draw(self.screen, dice_hover)
-            
-            # Players
+            # 2. Connection Lines (Arena)
+            cx, cy = self.arena_rect.center
+            active_p = self.players[self.turn]
+            if self.state != "GAME_OVER":
+                pygame.draw.line(self.screen, C_LINE, (cx, cy), active_p.pos, 2)
+
+            # 3. Dice
+            self.dice.draw(self.screen, self.dice.rect.collidepoint((mx,my)))
+
+            # 4. Players
             for p in self.players:
-                is_active = (p == self.get_active())
+                is_active = (p == self.players[self.turn])
                 is_target = False
-                if self.state == "TARGETING":
-                    d = self.payload
-                    actor = self.get_active()
-                    if d.get('fallen'): is_target = p.alive
-                    else: is_target = (p.alive and p != actor)
-                p.draw(self.screen, is_active, is_target, p.rect.collidepoint((mx,my)))
-            
-            # Notifications & Particles
-            for p in self.particles: p.draw(self.screen)
-            if self.notification: self.notification.draw(self.screen, self.arena_rect)
-            
-            # Sidebar UI
-            f_head = pygame.font.SysFont("Segoe UI", 36, bold=True)
-            f_sub = pygame.font.SysFont("Segoe UI", 18)
-            t_h = f_head.render(self.prompt, True, C_WHITE)
-            t_s = f_sub.render(self.sub_prompt, True, C_ACCENT)
-            
+                if "TARGET" in self.state:
+                    if self.state == "TARGET_FALLEN": is_target = not p.alive
+                    else: is_target = (p.alive and p != self.players[self.turn])
+                
+                p.draw(self.screen, is_active, is_target)
+
+            # 5. Sidebar UI
+            # Prompt
+            t1 = font_big.render(self.prompt, True, C_TEXT_MAIN)
+            t2 = font_small.render(self.sub_prompt, True, C_ACCENT)
             sx = self.sidebar_rect.x + 20
-            self.screen.blit(t_h, (sx, 40))
-            self.screen.blit(t_s, (sx, 85))
+            self.screen.blit(t1, (sx, 50))
+            self.screen.blit(t2, (sx, 90))
             
+            # Log Feed
+            if self.log_feed: self.log_feed.draw(self.screen)
+
+            # 6. Particles
+            for part in self.particles[:]:
+                part['pos'][0] += part['vel'][0]
+                part['pos'][1] += part['vel'][1]
+                part['life'] -= 1
+                if part['life'] <= 0: self.particles.remove(part); continue
+                
+                pt = font_particle.render(part['text'], True, part['col'])
+                pt.set_alpha(int((part['life']/60)*255))
+                self.screen.blit(pt, part['pos'])
+
             self.manager.draw_ui(self.screen)
             pygame.display.flip()
 
