@@ -8,7 +8,8 @@ description = "An interactive python dice basde game made by the students of Kat
 readme = "README.md"
 
 authors = [
-    { name = "Paurakh Raj Pandey", email = "pandeypaurakhraj@gmail.com" }
+    { name = "Paurakh Raj Pandey", email = "pandeypaurakhraj@gmail.com" } 
+    {name= "Rastriyata Nepal",email="rastriyata.nepal22@gmail.com"}
 ]
 license = { text = "MIT" }
 
