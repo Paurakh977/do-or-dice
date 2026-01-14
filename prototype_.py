@@ -27,11 +27,11 @@ AUD_DIR = BASE_DIR / "assets" / "audios"
 
 # --- PLAYER CONFIG ---
 PLAYER_PROFILES = {
-    0: {"name": "ASHIKA",     "img": "ashika.jpg",      "audio": "ashika_asking.mp3"},
-    1: {"name": "BIJAY SHAI", "img": "bijay_shai.jpg",  "audio": "bijay_shai.mp3"},
-    2: {"name": "DHAMALA",    "img": "dhamala.jpg",     "audio": "dhamala.mp3"},
-    3: {"name": "SACAR",      "img": "sacar.jpg",       "audio": "sacar.mp3"},
-    4: {"name": "SHERE",      "img": "shere.jpg",       "audio": "shere.mp3"},
+    0: {"name": "ASHIKA  👅",     "img": "ashika.jpg",      "audio": "ashika_asking.mp3"},
+    1: {"name": "BIJAY SHAI  💀", "img": "bijay_shai.jpg",  "audio": "bijay_shai.mp3"},
+    2: {"name": "GAMALA  🪴",    "img": "dhamala.jpg",     "audio": "dhamala.mp3"},
+    3: {"name": "Khakar  💦",      "img": "sacar.jpg",       "audio": "sacar.mp3"},
+    4: {"name": "DERE  🍑",      "img": "shere.jpg",       "audio": "shere.mp3"},
 }
 
 # --- MINIMALIST PRO THEME ---
@@ -257,7 +257,12 @@ class Player:
             surf.blit(t_vp, t_vp.get_rect(center=vp_rect.center))
             
             # Name
-            f_nm = pygame.font.SysFont("Segoe UI", int(14*s), bold=True)
+            # Use Segoe UI Emoji to support special characters (reverts to monochrome in Pygame)
+            try:
+                f_nm = pygame.font.SysFont("segoeuiemoji", int(28*s), bold=True)
+            except:
+                f_nm = pygame.font.SysFont("Segoe UI", int(28*s), bold=True)
+            
             t_nm = f_nm.render(self.name.upper(), True, C_TEXT_MAIN)
             surf.blit(t_nm, t_nm.get_rect(center=(cx, cy - (82*s))))
 
@@ -353,6 +358,19 @@ class Game:
         self.manager = pygame_gui.UIManager((DEFAULT_W, DEFAULT_H))
         
         self.voice_channel = pygame.mixer.Channel(0)
+
+        # --- BGM SETUP ---
+        # Plays bgm.mp3 from assets/audios/ if available
+        try:
+            bgm_path = AUD_DIR / "sansari_maya.mp3"
+            if bgm_path.exists():
+                pygame.mixer.music.load(str(bgm_path))
+                pygame.mixer.music.set_volume(0.2)  # Volume (0.0 - 1.0)
+                pygame.mixer.music.play(-1)         # Loop: -1 = infinite
+            else:
+                print(f"[BGM] Placeholder: Add 'bhajan.mp3' to {bgm_path}")
+        except Exception as e:
+            print(f"[BGM] Error: {e}")
         self.players = [Player(i) for i in range(5)]
         self.dice = Dice()
         self.log_feed = None
