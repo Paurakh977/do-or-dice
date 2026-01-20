@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build and Run Tests
+      # We use the 'tests' service defined in docker-compose
+      # run: |
+      #   docker compose -f Docker-compose.yml up --build --exit-code-from tests tests
