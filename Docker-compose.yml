@@ -1,0 +1,23 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: src/Dockerfile.prod
+    volumes:
+      - .:/app
+      - /app/.venv
+    environment:
+      - SDL_VIDEODRIVER=dummy
+    command: uv run main.py
+
+  tests:
+    build:
+      context: .
+      dockerfile: src/Dockerfile.prod
+    volumes:
+      - .:/app
+      - /app/.venv
+    environment:
+      - SDL_VIDEODRIVER=dummy
+      - PYTHONPATH=.
+    command: uv run pytest src/tests
