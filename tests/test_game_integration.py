@@ -1,13 +1,13 @@
 import pytest
 
-from src.models.Player import Player
-from src.models.Dice import ActiveFace, FallenFace, Status
-from src.helpers import Randomizer
+from models.Player import Player
+from models.Dice import ActiveFace, FallenFace, Status
+from helpers import Randomizer
 
-from src.services.History import HistoryService
-from src.controllers.api import Action_service
-from src.services.TurnResolver import TurnResolverService
-from src.services.Rank import IngameRankService
+from services.History import HistoryService
+from controllers.api import Action_service
+from services.TurnResolver import TurnResolverService
+from services.Rank import IngameRankService
 
 
 @pytest.fixture(autouse=True)

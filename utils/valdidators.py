@@ -1,9 +1,9 @@
 from dataclasses import is_dataclass
 from .exceptions import InputDataValidator
-from ..models import Player, ActiveFace, FallenFace
-from ..services.types import EventRecord
+from models import Player, ActiveFace, FallenFace
+from services.types import EventRecord
 from datetime import datetime
-from ..configs.constants import TOTAL_PLAYERS
+from configs.constants import TOTAL_PLAYERS
 
 
 class EventRecordValidator:

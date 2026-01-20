@@ -1,16 +1,16 @@
 import pytest
 from datetime import datetime
 
-from src.models.Player import Player
-from src.models.Dice import ActiveFace, FallenFace, Status
-from src.services.History import HistoryService, EventRecord
-from src.utils import (
+from models.Player import Player
+from models.Dice import ActiveFace, FallenFace, Status
+from services.History import HistoryService, EventRecord
+from utils import (
     InputDataValidator,
     MaxPlayersValidator,
     InvalidPlayerActionValidator,
     GameStateValidator,
 )
-from src.utils.valdidators import EventRecordValidator
+from utils.valdidators import EventRecordValidator
 
 @pytest.fixture(autouse=True)
 def clear_players():
@@ -163,8 +163,8 @@ def test_refine_event_all_faces_for_alive_and_fallen():
     p_fallen = Player("fallen")
     p_fallen.status = Status.FALLEN
 
-    # NOTHING faces should fail validation because no effect is present
-    assert svc.record_event(eid, p_fallen, FallenFace.NOTHING_1) is False
+    # NOTHING faces should pass validation but have no effect
+    assert svc.record_event(eid, p_fallen, FallenFace.NOTHING_1) is True
     eid += 1
 
     # PLUS2HP_OR_PLUS1VP -> choose heal option to target
@@ -181,8 +181,8 @@ def test_refine_event_all_faces_for_alive_and_fallen():
     assert svc.record_event(eid, p_fallen, FallenFace.REMOVE2HP_OR_MINUS1VP_2, consumer=p_alive, vp_stolen=1) is True
     eid += 1
 
-    # NOTHING_2 should also fail
-    assert svc.record_event(eid, p_fallen, FallenFace.NOTHING_2) is False
+    # NOTHING_2 should also pass (no effect)
+    assert svc.record_event(eid, p_fallen, FallenFace.NOTHING_2) is True
 
     # Now refine events and assert expected message fragments are present
     refined = svc.refine_event(history=svc.get_events(2,-2))

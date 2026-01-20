@@ -1,10 +1,10 @@
 from __future__ import annotations
-from ..models import Player, ActiveFace, FallenFace
+from models import Player, ActiveFace, FallenFace
 from typing import List, Dict, Optional
 from datetime import datetime
 from dataclasses import dataclass
-from ..utils import InputDataValidator
-from ..utils.valdidators import EventRecordValidator  # to aviod circular import
+from utils import InputDataValidator
+from utils.valdidators import EventRecordValidator  # to aviod circular import
 from collections import defaultdict
 from .types import EventRecord
 

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from ..models import Player
+from models import Player
 from datetime import datetime
 
 class Randomizer():

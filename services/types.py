@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from typing import List, Optional
 from datetime import datetime
-from ..models import Player, ActiveFace, FallenFace
+from models import Player, ActiveFace, FallenFace
 
 @dataclass
 class EventRecord:

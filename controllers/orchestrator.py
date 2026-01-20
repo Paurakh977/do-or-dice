@@ -1,8 +1,8 @@
 from __future__ import annotations
-from ..models import Player
-from ..services import TurnResolverService, IngameRankService
+from models import Player
+from services import TurnResolverService, IngameRankService
 from .api import Action_service
-from ..configs import MAX_ROUNDS, TOTAL_PLAYERS
+from configs import MAX_ROUNDS, TOTAL_PLAYERS
 
 
 class GameController:

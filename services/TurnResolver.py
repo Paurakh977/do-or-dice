@@ -1,8 +1,11 @@
 from __future__ import annotations
-from ..controllers.api import Action_service
-from ..models import Player, ActiveFace, FallenFace, active_face_vals, fallen_face_vals, Status
-from ..utils import GameStateValidator
-from ..configs.constants import MAX_ROUNDS as CONFIG_MAX_ROUNDS
+from typing import TYPE_CHECKING
+from models import Player, ActiveFace, FallenFace, active_face_vals, fallen_face_vals, Status
+from utils import GameStateValidator
+from configs.constants import MAX_ROUNDS as CONFIG_MAX_ROUNDS
+
+if TYPE_CHECKING:
+    from controllers.api import Action_service
 
 class TurnResolverService():
     """

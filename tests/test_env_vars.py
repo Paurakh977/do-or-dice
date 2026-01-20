@@ -9,7 +9,7 @@ def test_env_vars_loaded_and_print():
     load_dotenv(here, override=True)
 
     # import the constants module from package and reload it so it picks up the loaded env
-    import src.configs.constants as constants
+    import configs.constants as constants
     importlib.reload(constants)
 
     # Print values so test output shows what was loaded

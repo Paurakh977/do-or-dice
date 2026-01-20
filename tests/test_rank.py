@@ -1,7 +1,7 @@
 import pytest
 
-from src.models.Player import Player
-from src.services.Rank import IngameRankService
+from models.Player import Player
+from services.Rank import IngameRankService
 
 
 @pytest.fixture(autouse=True)

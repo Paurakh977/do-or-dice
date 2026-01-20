@@ -1,9 +1,9 @@
 import pytest
 
-from src.models.Player import Player
-from src.models.Dice import ActiveFace, FallenFace, Status
-from src.helpers import Randomizer
-from src.utils import (
+from models.Player import Player
+from models.Dice import ActiveFace, FallenFace, Status
+from helpers import Randomizer
+from utils import (
     MaxPlayersValidator,
     InvalidPlayerActionValidator,
     GameStateValidator,

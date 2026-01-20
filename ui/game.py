@@ -18,11 +18,11 @@ from .theme import (
 from .player_profiles import PLAYER_PROFILES, BGM_FILE
 from .components import LogFeed, PlayerVisual, Dice
 
-from src.controllers.orchestrator import GameController
-from src.controllers.api import Action_service
-from src.services import HistoryService, TurnResolverService, IngameRankService
-from src.models import Player, Status, ActiveFace, FallenFace, active_face_vals, fallen_face_vals
-from src.configs.constants import MAX_ROUNDS, TOTAL_PLAYERS
+from controllers.orchestrator import GameController
+from controllers.api import Action_service
+from services import HistoryService, TurnResolverService, IngameRankService
+from models import Player, Status, ActiveFace, FallenFace, active_face_vals, fallen_face_vals
+from configs.constants import MAX_ROUNDS, TOTAL_PLAYERS
 
 
 # Configuration
@@ -34,7 +34,6 @@ class Game:
     """Main game class that manages the UI and integrates with backend services."""
     
     def __init__(self):
-        # Initialize pygame
         pygame.init()
         pygame.mixer.init()
         
@@ -78,12 +77,10 @@ class Game:
         self.turn_resolver.set_participants(Player.player_arrangement)
         self.ranking_service.initiate_ranks()
         
-        # --- VISUAL PLAYERS ---
         self.player_visuals: list[PlayerVisual] = []
         for i, player in enumerate(Player.player_arrangement):
             self.player_visuals.append(PlayerVisual(player, i))
         
-        # --- UI COMPONENTS ---
         self.dice = Dice()
         self.log_feed: LogFeed | None = None
         
@@ -99,7 +96,6 @@ class Game:
         self.last_played_player = -1
         self.current_audio = None
         
-        # Move Display
         self.move_display: dict | None = None  # {"text": str, "color": tuple, "timer": int}
         
         # Audio & Background Extras
@@ -126,14 +122,13 @@ class Game:
         rows = self.h // grid_sz + 2
         cols = (self.w - 320) // grid_sz + 2
         
-        # Draw dotted grid intersections instead of lines for a cleaner look
         for y in range(rows):
             for x in range(cols):
                 px = x * grid_sz
                 py = y * grid_sz + self.bg_scroll - 80
                 pygame.draw.circle(self.screen, (50, 50, 70), (px, py), 1)
 
-        # 2. Floating Particles (Stars/Dust)
+        #  Floating Particles (Stars/Dust)
         for p in self.bg_particles:
             p[1] -= p[2] * 0.3  # Float up
             if p[1] < -10:
@@ -671,7 +666,17 @@ class Game:
             # C) Player Stats Panel (Card Style)
             stats_y = 110
             
-            for i, pv in enumerate(self.player_visuals):
+            # Update and get sorted ranks
+            self.ranking_service.check_rank()
+            ranked_records = self.ranking_service.get_ranks_list
+
+            for i, record in enumerate(ranked_records):
+                # Find the visual for this player
+                p_name = record['player_name']
+                pv = next((x for x in self.player_visuals if x.player.name == p_name), None)
+                if not pv:
+                    continue
+
                 card_h = 50
                 card_y = stats_y + (i * (card_h + 10))
                 card_rect = pygame.Rect(self.sidebar_rect.x + 15, card_y, 310, card_h)

@@ -1,7 +1,10 @@
 from __future__ import annotations
-from ..models import Player, FallenFace, ActiveFace, Status, active_face_vals, fallen_face_vals 
-from ..utils import InvalidPlayerActionValidator, GameStateValidator
-from ..services import HistoryService
+from typing import TYPE_CHECKING
+from models import Player, FallenFace, ActiveFace, Status, active_face_vals, fallen_face_vals 
+from utils import InvalidPlayerActionValidator, GameStateValidator
+
+if TYPE_CHECKING:
+    from services import HistoryService
 
 class Action_service:
     """

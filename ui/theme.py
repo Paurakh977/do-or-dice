@@ -4,12 +4,19 @@ Replicates the minimalist pro theme from the prototype.
 """
 import pygame
 import pygame.gfxdraw
+import sys
 from pathlib import Path
 
 # ==================================================================
 # 🔧 PATHS
 # ==================================================================
-BASE_DIR = Path(__file__).parent.parent
+if getattr(sys, 'frozen', False):
+    # Running in a PyInstaller bundle
+    BASE_DIR = Path(sys._MEIPASS)
+else:
+    # Running in a normal Python environment
+    BASE_DIR = Path(__file__).parent.parent
+
 IMG_DIR = BASE_DIR / "assets" / "images"
 AUD_DIR = BASE_DIR / "assets" / "audios"
 

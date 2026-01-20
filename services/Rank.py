@@ -1,6 +1,6 @@
 from typing import Dict, TypedDict, List
-from ..models.Player import Player
-from ..utils.exceptions import InputDataValidator
+from models.Player import Player
+from utils.exceptions import InputDataValidator
 
 
 class RankRecord(TypedDict):

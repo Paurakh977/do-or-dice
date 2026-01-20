@@ -14,7 +14,7 @@ from .theme import (
 )
 from .player_profiles import PLAYER_PROFILES
 
-from src.models import Player, Status
+from models import Player, Status
 
 
 class LogFeed:

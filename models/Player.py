@@ -1,10 +1,10 @@
 from __future__ import annotations
-from ..utils import MaxPlayersValidator, InvalidPlayerActionValidator, GameStateValidator
-from ..helpers import Randomizer
+from utils import MaxPlayersValidator, InvalidPlayerActionValidator, GameStateValidator
+from helpers import Randomizer
 from colorama import init, Fore
 from typing import Union
 from .Dice import ActiveFace, FallenFace, Status, active_face_vals, fallen_face_vals
-from ..configs.constants import TOTAL_PLAYERS
+from configs.constants import TOTAL_PLAYERS
 
 init(autoreset=True)
 
