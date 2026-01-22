@@ -31,10 +31,10 @@ const gameplaySteps = [
 ]
 
 const vpMethods = [
-  { method: "Survive a round", points: "+1", color: "from-green-500/20 to-green-500/5" },
-  { method: "Eliminate player", points: "+2", color: "from-red-500/20 to-red-500/5" },
-  { method: "Pickpocket roll", points: "+1", color: "from-yellow-500/20 to-yellow-500/5" },
-  { method: "Power Move", points: "+3", color: "from-primary/20 to-primary/5" },
+  { method: "Survive a round", points: "+1" },
+  { method: "Eliminate player", points: "+2" },
+  { method: "Pickpocket roll", points: "+1" },
+  { method: "Power Move", points: "+3" },
 ]
 
 function StepCard({ step, index }: { step: typeof gameplaySteps[0]; index: number }) {
@@ -45,15 +45,15 @@ function StepCard({ step, index }: { step: typeof gameplaySteps[0]; index: numbe
     <motion.div
       ref={ref}
       className="relative"
-      initial={{ opacity: 0, x: index % 2 === 0 ? -100 : 100 }}
-      animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: index % 2 === 0 ? -100 : 100 }}
-      transition={{ duration: 0.8, delay: index * 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+      initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
+      animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
+      transition={{ duration: 0.6, delay: index * 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      <div className="group relative p-8 rounded-3xl border border-border/30 bg-gradient-to-br from-card/50 to-transparent backdrop-blur-sm hover:border-primary/30 transition-all duration-500">
-        {/* Step number with glow */}
+      <div className="group relative p-8 rounded-2xl bg-white border border-neutral-100 hover:border-neutral-200 hover:shadow-xl hover:shadow-neutral-100/50 transition-all duration-500">
+        {/* Step number with gradient */}
         <div className="absolute -top-6 -left-2">
           <span
-            className="text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-primary/40 to-transparent"
+            className="text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-orange-200 to-transparent"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             {step.step}
@@ -63,24 +63,18 @@ function StepCard({ step, index }: { step: typeof gameplaySteps[0]; index: numbe
         {/* Content */}
         <div className="relative z-10 pt-8">
           <h3
-            className="text-3xl md:text-4xl font-bold text-foreground mb-1"
+            className="text-3xl md:text-4xl font-bold text-neutral-900 mb-1"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             {step.title}
           </h3>
-          <span className="text-2xl md:text-3xl font-light text-primary">
+          <span className="text-2xl md:text-3xl font-light text-orange-500 italic">
             {step.subtitle}
           </span>
-          <p className="text-muted-foreground mt-4 leading-relaxed">
+          <p className="text-neutral-500 mt-4 leading-relaxed">
             {step.description}
           </p>
         </div>
-
-        {/* Hover glow effect */}
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-        {/* Corner decoration */}
-        <div className="absolute bottom-4 right-4 w-12 h-12 border-r-2 border-b-2 border-primary/20 rounded-br-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       </div>
     </motion.div>
   )
@@ -96,12 +90,12 @@ export function GameplaySection() {
   const lineHeight = useTransform(scrollYProgress, [0.1, 0.6], ["0%", "100%"])
 
   return (
-    <section id="gameplay" className="py-32 px-4 relative overflow-hidden" ref={containerRef}>
+    <section id="gameplay" className="py-32 px-4 relative overflow-hidden bg-white" ref={containerRef}>
       {/* Subtle grid pattern */}
       <div
-        className="absolute inset-0 opacity-[0.02]"
+        className="absolute inset-0 opacity-[0.03]"
         style={{
-          backgroundImage: `linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)`,
           backgroundSize: '60px 60px'
         }}
       />
@@ -116,7 +110,7 @@ export function GameplaySection() {
           transition={{ duration: 0.8 }}
         >
           <motion.span
-            className="inline-block text-primary text-sm tracking-[0.3em] uppercase mb-4"
+            className="inline-block text-orange-500 text-sm tracking-[0.3em] uppercase mb-4 font-medium"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -124,7 +118,7 @@ export function GameplaySection() {
             How to Play
           </motion.span>
           <motion.h2
-            className="text-5xl md:text-7xl font-bold text-foreground"
+            className="text-5xl md:text-7xl font-bold text-neutral-900 text-depth"
             style={{ fontFamily: "var(--font-heading)" }}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -138,9 +132,9 @@ export function GameplaySection() {
         {/* Steps with animated line */}
         <div className="relative">
           {/* Vertical connecting line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/30 -translate-x-1/2 hidden lg:block">
+          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-neutral-100 -translate-x-1/2 hidden lg:block">
             <motion.div
-              className="absolute top-0 left-0 w-full bg-gradient-to-b from-primary to-primary/20"
+              className="absolute top-0 left-0 w-full bg-gradient-to-b from-orange-400 to-orange-200"
               style={{ height: lineHeight }}
             />
           </div>
@@ -166,10 +160,10 @@ export function GameplaySection() {
           transition={{ duration: 0.8 }}
         >
           <h3
-            className="text-3xl md:text-4xl font-bold text-center text-foreground mb-12"
+            className="text-3xl md:text-4xl font-bold text-center text-neutral-900 mb-12"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            Earning <span className="text-primary">Victory Points</span>
+            Earning <span className="text-orange-500">Victory Points</span>
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -180,24 +174,15 @@ export function GameplaySection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                whileHover={{ scale: 1.02, y: -5 }}
-                className={`relative p-6 rounded-2xl border border-border/30 bg-gradient-to-br ${item.color} backdrop-blur-sm overflow-hidden group`}
+                className="relative p-6 rounded-2xl bg-gradient-to-br from-orange-50 to-white border border-orange-100 hover:shadow-lg hover:shadow-orange-100/50 transition-all duration-300 text-center group"
               >
                 <span
-                  className="absolute -top-4 -right-4 text-7xl font-bold text-foreground/5 group-hover:text-primary/10 transition-colors"
+                  className="text-4xl font-bold text-orange-500"
                   style={{ fontFamily: "var(--font-heading)" }}
                 >
-                  VP
+                  {item.points}
                 </span>
-                <div className="relative z-10">
-                  <span
-                    className="text-4xl font-bold text-primary"
-                    style={{ fontFamily: "var(--font-heading)" }}
-                  >
-                    {item.points}
-                  </span>
-                  <p className="text-foreground mt-2 font-medium">{item.method}</p>
-                </div>
+                <p className="text-neutral-600 mt-2 font-medium">{item.method}</p>
               </motion.div>
             ))}
           </div>

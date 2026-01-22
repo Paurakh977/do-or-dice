@@ -1,26 +1,23 @@
 "use client"
 
-import { Canvas, useFrame } from "@react-three/fiber"
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { Environment, Float, RoundedBox, MeshTransmissionMaterial, ContactShadows, Lightformer } from "@react-three/drei"
-import { useRef, useMemo } from "react"
+import { useRef, useMemo, useEffect, useState } from "react"
 import * as THREE from "three"
 
 // --- CONFIGURATION ---
 const DIE_SIZE = 2
 const PIP_RADIUS = 0.15
-// Distance from center to pip center. 
-// (Die is 2 wide, so edge is 1.0. We want pips at ~0.55 to be centered on the face quarters)
-const PIP_SPREAD = 0.55 
-// Push pips to the very edge of the glass so they are clearly visible
-const PIP_DEPTH = 1.0 - PIP_RADIUS + 0.05 
+const PIP_SPREAD = 0.55
+const PIP_DEPTH = 1.0 - PIP_RADIUS + 0.05
 
 const SMOKED_GLASS_MATERIAL = {
     backside: true,
     samples: 16,
     resolution: 1024,
     transmission: 1,
-    roughness: 0,           // Perfectly polished
-    thickness: 1.5,         
+    roughness: 0,
+    thickness: 1.5,
     ior: 1.5,
     chromaticAberration: 0.06,
     anisotropy: 0.1,
@@ -29,20 +26,18 @@ const SMOKED_GLASS_MATERIAL = {
     temporalDistortion: 0,
     clearcoat: 1,
     attenuationDistance: 0.75,
-    attenuationColor: "#ffffff", 
-    color: "#202020",      // <-- CHANGED: Not pure black, but dark charcoal
+    attenuationColor: "#ffffff",
+    color: "#202020",
     bg: "#ffffff"
 }
 
 function Pips() {
-    // GLOWING WHITE MATERIAL
-    // This allows the dots to "punch" through the dark glass
-    const material = useMemo(() => new THREE.MeshStandardMaterial({ 
-        color: "#ffffff", 
+    const material = useMemo(() => new THREE.MeshStandardMaterial({
+        color: "#ffffff",
         roughness: 0,
-        emissive: "#ffffff",   // The dots emit light
-        emissiveIntensity: 1.5, // High intensity to shine through glass
-        toneMapped: false       // Keep colors pure white, don't let lighting dull them
+        emissive: "#ffffff",
+        emissiveIntensity: 1.5,
+        toneMapped: false
     }), [])
 
     const Pip = ({ pos }: { pos: [number, number, number] }) => (
@@ -52,7 +47,7 @@ function Pips() {
         </mesh>
     )
 
-    const Face = ({ children, rotation = [0,0,0] }: any) => (
+    const Face = ({ children, rotation = [0, 0, 0] }: { children: React.ReactNode; rotation?: [number, number, number] }) => (
         <group rotation={rotation}>{children}</group>
     )
 
@@ -60,9 +55,9 @@ function Pips() {
         <group>
             {/* 1 - Front */}
             <Face>
-                <Pip pos={[0, 0, PIP_DEPTH]} /> 
+                <Pip pos={[0, 0, PIP_DEPTH]} />
             </Face>
-            
+
             {/* 6 - Back */}
             <Face rotation={[0, Math.PI, 0]}>
                 <Pip pos={[-PIP_SPREAD, -PIP_SPREAD, PIP_DEPTH]} /><Pip pos={[-PIP_SPREAD, 0, PIP_DEPTH]} /><Pip pos={[-PIP_SPREAD, PIP_SPREAD, PIP_DEPTH]} />
@@ -98,38 +93,67 @@ function Pips() {
     )
 }
 
+// Mouse tracking for interactivity
+function MouseTracker({ onMouseMove }: { onMouseMove: (x: number, y: number) => void }) {
+    const { viewport } = useThree()
+
+    useEffect(() => {
+        const handleMouseMove = (event: MouseEvent) => {
+            const x = (event.clientX / window.innerWidth) * 2 - 1
+            const y = -(event.clientY / window.innerHeight) * 2 + 1
+            onMouseMove(x * viewport.width * 0.1, y * viewport.height * 0.1)
+        }
+
+        window.addEventListener('mousemove', handleMouseMove)
+        return () => window.removeEventListener('mousemove', handleMouseMove)
+    }, [onMouseMove, viewport])
+
+    return null
+}
+
 function CrystalDie() {
     const meshRef = useRef<THREE.Group>(null)
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+    const targetRotation = useRef({ x: 0, y: 0 })
 
     useFrame((state) => {
         if (!meshRef.current) return
         const t = state.clock.getElapsedTime()
-        meshRef.current.rotation.x = Math.sin(t * 0.2) * 0.2
-        meshRef.current.rotation.y = t * 0.25
+
+        // Smooth mouse influence
+        targetRotation.current.x = mousePos.y * 0.3
+        targetRotation.current.y = mousePos.x * 0.3
+
+        // Base rotation + subtle mouse influence
+        meshRef.current.rotation.x = Math.sin(t * 0.2) * 0.2 + targetRotation.current.x * 0.4
+        meshRef.current.rotation.y = t * 0.25 + targetRotation.current.y * 0.4
         meshRef.current.rotation.z = Math.cos(t * 0.2) * 0.1
     })
 
     return (
-        <Float speed={2} rotationIntensity={0.5} floatIntensity={1} floatingRange={[-0.2, 0.2]}>
-            <group ref={meshRef}>
-                {/* The Glass Box */}
-                <RoundedBox args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} radius={0.25} smoothness={8}>
-                    <MeshTransmissionMaterial {...SMOKED_GLASS_MATERIAL} />
-                </RoundedBox>
-                
-                {/* The White Dots */}
-                <Pips />
-            </group>
-        </Float>
+        <>
+            <MouseTracker onMouseMove={(x, y) => setMousePos({ x, y })} />
+            <Float speed={2} rotationIntensity={0.5} floatIntensity={1} floatingRange={[-0.2, 0.2]}>
+                <group ref={meshRef}>
+                    {/* The Glass Box */}
+                    <RoundedBox args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} radius={0.25} smoothness={8}>
+                        <MeshTransmissionMaterial {...SMOKED_GLASS_MATERIAL} />
+                    </RoundedBox>
+
+                    {/* The White Dots */}
+                    <Pips />
+                </group>
+            </Float>
+        </>
     )
 }
 
 export function DiceScene() {
     return (
         <Canvas dpr={[1, 2]} camera={{ position: [0, 1, 6], fov: 45 }}>
-            {/* White background to maximize contrast with black die */}
-            <color attach="background" args={["#f0f0f0"]} />
-            
+            {/* Light background to match minimalist theme */}
+            <color attach="background" args={["#fafafa"]} />
+
             <Environment resolution={512}>
                 <group rotation={[-Math.PI / 3, 0, 1]}>
                     <Lightformer form="rect" intensity={5} position={[3, 4, 3]} scale={5} color="#ffffff" />
@@ -139,13 +163,13 @@ export function DiceScene() {
             </Environment>
 
             <CrystalDie />
-            
-            <ContactShadows 
-                position={[0, -1.6, 0]} 
-                opacity={0.6} 
-                scale={15} 
-                blur={2.5} 
-                far={4} 
+
+            <ContactShadows
+                position={[0, -1.6, 0]}
+                opacity={0.6}
+                scale={15}
+                blur={2.5}
+                far={4}
             />
         </Canvas>
     )

@@ -6,10 +6,7 @@ import Image from "next/image"
 
 export function Footer() {
   return (
-    <footer className="py-16 px-4 border-t border-border/30 relative overflow-hidden">
-      {/* Subtle glow */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[200px] bg-primary/5 rounded-full blur-3xl" />
-      
+    <footer className="py-16 px-4 border-t border-neutral-100 relative overflow-hidden bg-[#fafafa]">
       <div className="max-w-6xl mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -27,8 +24,8 @@ export function Footer() {
               height={40}
               className="opacity-70"
             />
-            <span 
-              className="text-lg font-semibold text-foreground/80"
+            <span
+              className="text-lg font-semibold text-neutral-600"
               style={{ fontFamily: "var(--font-heading)" }}
             >
               DO or DICE
@@ -39,19 +36,19 @@ export function Footer() {
           <div className="flex items-center gap-8">
             <a
               href="#features"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-neutral-400 hover:text-neutral-900 transition-colors"
             >
               Features
             </a>
             <a
               href="#gameplay"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-neutral-400 hover:text-neutral-900 transition-colors"
             >
               How to Play
             </a>
             <a
               href="#rules"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-neutral-400 hover:text-neutral-900 transition-colors"
             >
               Rules
             </a>
@@ -59,7 +56,7 @@ export function Footer() {
               href="https://github.com/Paurakh977/DO-OR-DICE"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-2 text-sm text-neutral-400 hover:text-neutral-900 transition-colors"
             >
               <Github className="w-4 h-4" />
               Source
@@ -67,10 +64,10 @@ export function Footer() {
           </div>
 
           {/* Divider */}
-          <div className="w-24 h-px bg-border/50" />
+          <div className="w-24 h-px bg-neutral-200" />
 
           {/* Copyright */}
-          <p className="text-xs text-muted-foreground/60">
+          <p className="text-xs text-neutral-400">
             © 2025 DO or DICE. Built with Python & Pygame.
           </p>
         </motion.div>

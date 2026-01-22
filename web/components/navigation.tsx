@@ -22,7 +22,7 @@ export function Navigation() {
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50)
-      
+
       // Update active section based on scroll position
       const sections = navLinks.map(link => link.href.slice(1))
       for (const section of sections.reverse()) {
@@ -55,7 +55,7 @@ export function Navigation() {
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
           isScrolled
-            ? "bg-background/70 backdrop-blur-xl border-b border-border/30"
+            ? "bg-white/80 backdrop-blur-xl border-b border-neutral-100"
             : "bg-transparent"
         )}
       >
@@ -72,11 +72,11 @@ export function Navigation() {
               height={36}
               className="group-hover:scale-110 transition-transform duration-300"
             />
-            <span 
-              className="font-bold text-foreground hidden sm:block tracking-tight"
+            <span
+              className="font-bold text-neutral-900 hidden sm:block tracking-tight"
               style={{ fontFamily: "var(--font-heading)" }}
             >
-              DO <span className="text-primary font-light italic">or</span> DICE
+              DO <span className="text-orange-500 font-light italic">or</span> DICE
             </span>
           </button>
 
@@ -89,24 +89,24 @@ export function Navigation() {
                 className={cn(
                   "relative px-4 py-2 text-sm font-medium transition-colors",
                   activeSection === link.href.slice(1)
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-neutral-900"
+                    : "text-neutral-500 hover:text-neutral-900"
                 )}
               >
                 {link.label}
                 {activeSection === link.href.slice(1) && (
                   <motion.div
                     layoutId="activeSection"
-                    className="absolute inset-0 bg-primary/10 rounded-lg -z-10"
+                    className="absolute inset-0 bg-orange-100/50 rounded-lg -z-10"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
               </button>
             ))}
-            <div className="w-px h-6 bg-border/50 mx-2" />
+            <div className="w-px h-6 bg-neutral-200 mx-2" />
             <Button
               size="sm"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-lg"
+              className="bg-neutral-900 hover:bg-neutral-800 text-white gap-2 rounded-lg"
               asChild
             >
               <a href="/DoOrDice.zip" download>
@@ -119,7 +119,7 @@ export function Navigation() {
           {/* Mobile menu button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 text-foreground hover:text-primary transition-colors"
+            className="md:hidden p-2 text-neutral-900 hover:text-orange-500 transition-colors"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -135,7 +135,7 @@ export function Navigation() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 bg-background/98 backdrop-blur-xl md:hidden"
+            className="fixed inset-0 z-40 bg-white/98 backdrop-blur-xl md:hidden"
           >
             <nav className="flex flex-col items-center justify-center h-full gap-8 p-8">
               {navLinks.map((link, index) => (
@@ -146,7 +146,7 @@ export function Navigation() {
                   exit={{ opacity: 0, y: 30 }}
                   transition={{ delay: index * 0.1, duration: 0.4 }}
                   onClick={() => scrollToSection(link.href)}
-                  className="text-3xl font-bold text-foreground hover:text-primary transition-colors"
+                  className="text-3xl font-bold text-neutral-900 hover:text-orange-500 transition-colors"
                   style={{ fontFamily: "var(--font-heading)" }}
                 >
                   {link.label}
@@ -161,7 +161,7 @@ export function Navigation() {
               >
                 <Button
                   size="lg"
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground gap-3 px-8 py-6 text-lg rounded-xl"
+                  className="bg-neutral-900 hover:bg-neutral-800 text-white gap-3 px-8 py-6 text-lg rounded-xl"
                   asChild
                 >
                   <a href="/DoOrDice.zip" download onClick={() => setIsMobileMenuOpen(false)}>

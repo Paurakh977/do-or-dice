@@ -1,41 +1,44 @@
+/* Import premium fonts - MUST be at very top */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Deep void black background */
-  --background: oklch(0.05 0.01 0);
-  /* Crisp white foreground */
-  --foreground: oklch(0.98 0 0);
+  /* Clean, minimal light background */
+  --background: oklch(0.985 0 0);
+  /* Dark foreground for contrast */
+  --foreground: oklch(0.1 0 0);
 
   /* UI Elements */
-  --card: oklch(0.1 0 0);
-  --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.08 0 0);
-  --popover-foreground: oklch(0.98 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.1 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.1 0 0);
 
-  /* Magma Orange - Super Vivid */
-  --primary: oklch(0.65 0.25 35);
-  --primary-foreground: oklch(0 0 0);
+  /* Molten lava accent */
+  --primary: oklch(0.6 0.25 30);
+  --primary-foreground: oklch(1 0 0);
 
-  --secondary: oklch(0.15 0 0);
-  --secondary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.1 0 0);
 
-  --muted: oklch(0.2 0 0);
-  --muted-foreground: oklch(0.6 0 0);
+  --muted: oklch(0.95 0 0);
+  --muted-foreground: oklch(0.45 0 0);
 
-  --accent: oklch(0.15 0 0);
-  --accent-foreground: oklch(0.98 0 0);
+  --accent: oklch(0.96 0 0);
+  --accent-foreground: oklch(0.1 0 0);
 
-  --destructive: oklch(0.5 0.2 25);
-  --destructive-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.55 0.25 25);
+  --destructive-foreground: oklch(1 0 0);
 
-  --border: oklch(0.2 0 0);
-  --input: oklch(0.2 0 0);
-  --ring: oklch(0.65 0.25 35);
+  --border: oklch(0.9 0 0);
+  --input: oklch(0.9 0 0);
+  --ring: oklch(0.6 0.25 30);
 
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 }
 
 .dark {
@@ -99,29 +102,86 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Custom scrollbar */
+/* Premium Typography - 3D Depth for light backgrounds */
+.text-depth {
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.05),
+    0 2px 0 rgba(0, 0, 0, 0.04),
+    0 3px 0 rgba(0, 0, 0, 0.03),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.text-depth-heavy {
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.1),
+    0 2px 0 rgba(0, 0, 0, 0.08),
+    0 3px 0 rgba(0, 0, 0, 0.06),
+    0 4px 0 rgba(0, 0, 0, 0.04),
+    0 6px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Custom scrollbar - ultra minimal */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-background;
+  @apply bg-transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted rounded-full;
+  @apply bg-neutral-300 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-primary;
+  @apply bg-neutral-400;
 }
 
 /* Selection color */
 ::selection {
-  background: oklch(0.65 0.25 35 / 0.3);
+  background: oklch(0.6 0.25 30 / 0.2);
   color: var(--foreground);
+}
+
+/* Subtle noise texture */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Premium button hover effect */
+.btn-premium {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-premium::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.btn-premium:hover::before {
+  transform: translateX(100%);
 }
