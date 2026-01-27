@@ -1,6 +1,6 @@
 "use client"
 
-import { motion, useInView } from "framer-motion"
+import { motion, useInView, useMotionValue, useSpring, useTransform } from "framer-motion"
 import { useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from "lucide-react"
@@ -15,25 +15,62 @@ const diceEffects = [
 ]
 
 function DiceCard({ dice, index }: { dice: typeof diceEffects[0]; index: number }) {
+  // 3D Tilt Logic
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const mouseX = useSpring(x, { stiffness: 500, damping: 100 })
+  const mouseY = useSpring(y, { stiffness: 500, damping: 100 })
+
+  function onMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
+    const { left, top, width, height } = currentTarget.getBoundingClientRect()
+    x.set(clientX - left - width / 2)
+    y.set(clientY - top - height / 2)
+  }
+
+  function onMouseLeave() {
+    x.set(0)
+    y.set(0)
+  }
+
+  const rotateX = useTransform(mouseY, [-200, 200], [10, -10])
+  const rotateY = useTransform(mouseX, [-200, 200], [-10, 10])
+
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.05 }}
-      className={`group relative p-6 rounded-2xl border ${dice.border} ${dice.bg} overflow-hidden hover:scale-105 transition-transform duration-300`}
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      whileInView={{ opacity: 1, scale: 1, y: 0 }}
+      viewport={{ once: true, margin: "-10%" }}
+      transition={{ delay: index * 0.05, duration: 0.5 }}
+      style={{ perspective: 1000 }}
+      className="group relative h-full"
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
     >
-      <div className="flex justify-between items-start">
-        <div className="flex flex-col">
-          <span className={`text-xs font-bold tracking-widest ${dice.color} mb-1 opacity-70`}>{dice.name}</span>
-          <span className="text-2xl font-bold text-white mb-2">{dice.effect}</span>
-          <span className="text-xs text-neutral-400 bg-neutral-900/50 px-2 py-1 rounded inline-block w-fit">{dice.target}</span>
+      <motion.div
+        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+        className={`relative h-full p-6 rounded-2xl border border-neutral-800 bg-[#0a0a0a] overflow-hidden transition-colors hover:border-neutral-700 shadow-lg shadow-black/50`}
+      >
+        {/* Noise Texture */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` }}
+        />
+
+        {/* Subtle Gradient Background based on dice type */}
+        <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br ${dice.color.replace('text-', 'from-')} to-transparent`} />
+
+        <div className="relative z-10 flex flex-col h-full justify-between transform-style-3d translate-z-10">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex flex-col">
+              <span className={`text-[10px] font-bold tracking-[0.2em] ${dice.color} mb-1 opacity-80 uppercase`}>{dice.name}</span>
+              <span className="text-xl font-bold text-white mb-2 tracking-tight">{dice.effect}</span>
+              <span className="text-[10px] text-neutral-500 border border-neutral-800 bg-neutral-900/50 px-2 py-0.5 rounded-full inline-block w-fit uppercase tracking-wider">{dice.target}</span>
+            </div>
+            <div className={`p-2 rounded-xl bg-neutral-900/50 border border-neutral-800 ${dice.color} group-hover:scale-110 transition-transform duration-300`}>
+              <dice.icon size={20} />
+            </div>
+          </div>
         </div>
-        <div className={`p-3 rounded-xl bg-black/20 ${dice.color}`}>
-          <dice.icon size={24} />
-        </div>
-      </div>
-      <div className={`absolute inset-0 bg-gradient-to-r ${dice.color.replace('text-', 'from-')}/0 via-transparent to-transparent opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
+      </motion.div>
     </motion.div>
   )
 }
@@ -92,23 +129,33 @@ export function RulesSection() {
         </div>
 
         {/* Fallen Mechanics */}
-        <div className="rounded-3xl bg-gradient-to-br from-neutral-900 to-black border border-neutral-800 p-8 md:p-12 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-purple-900/10 rounded-full blur-[100px] pointer-events-none" />
+        <div className="relative group perspective-1000">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-            <div>
-              <h3 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: "var(--font-heading)" }}>Fallen Protocols</h3>
-              <p className="text-neutral-400 max-w-lg">Even in death, you serve. Roll as a ghost to bless your allies or curve your enemies' fate.</p>
-            </div>
+          <div className="relative rounded-3xl bg-[#0a0a0a] border border-neutral-800 p-8 md:p-12 overflow-hidden shadow-2xl">
+            {/* Noise Texture */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` }}
+            />
 
-            <div className="flex gap-4">
-              <div className="text-center p-4 bg-black/40 rounded-xl border border-neutral-800 min-w-[100px]">
-                <span className="block text-2xl font-bold text-emerald-500 mb-1">3-4</span>
-                <span className="text-[10px] uppercase text-neutral-500 tracking-wider">Blessing</span>
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-purple-900/5 rounded-full blur-[100px] pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+              <div>
+                <span className="text-purple-500 font-mono text-xs tracking-widest uppercase mb-2 block">Post-Mortem Gameplay</span>
+                <h3 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: "var(--font-heading)" }}>Fallen Protocols</h3>
+                <p className="text-neutral-400 max-w-lg leading-relaxed text-sm">Even in death, you serve. Roll as a ghost to bless your allies or curve your enemies' fate. The game doesn't end when your heart stops.</p>
               </div>
-              <div className="text-center p-4 bg-black/40 rounded-xl border border-neutral-800 min-w-[100px]">
-                <span className="block text-2xl font-bold text-red-500 mb-1">5-6</span>
-                <span className="text-[10px] uppercase text-neutral-500 tracking-wider">Curse</span>
+
+              <div className="flex gap-4">
+                <div className="text-center p-5 bg-neutral-900/50 rounded-2xl border border-neutral-800 min-w-[110px] group/stat hover:border-emerald-500/30 transition-colors">
+                  <span className="block text-3xl font-bold text-emerald-500 mb-1 group-hover/stat:scale-110 transition-transform">3-4</span>
+                  <span className="text-[10px] uppercase text-neutral-500 tracking-widest font-mono">Blessing</span>
+                </div>
+                <div className="text-center p-5 bg-neutral-900/50 rounded-2xl border border-neutral-800 min-w-[110px] group/stat hover:border-red-500/30 transition-colors">
+                  <span className="block text-3xl font-bold text-red-500 mb-1 group-hover/stat:scale-110 transition-transform">5-6</span>
+                  <span className="text-[10px] uppercase text-neutral-500 tracking-widest font-mono">Curse</span>
+                </div>
               </div>
             </div>
           </div>
