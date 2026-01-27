@@ -1,6 +1,6 @@
 "use client"
 
-import { motion, useInView } from "framer-motion"
+import { motion, useInView, useScroll, useTransform } from "framer-motion"
 import { useRef } from "react"
 import { Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,13 @@ import Image from "next/image"
 export function DownloadSection() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
+
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"]
+  })
+
+  const rotate = useTransform(scrollYProgress, [0, 1], [0, 30])
 
   return (
     <section id="download" className="py-32 px-4 relative overflow-hidden bg-white">
@@ -30,6 +37,7 @@ export function DownloadSection() {
             className="mb-12"
           >
             <motion.div
+              style={{ rotate }}
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             >

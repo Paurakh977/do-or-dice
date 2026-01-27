@@ -1,6 +1,6 @@
 "use client"
 
-import { motion, useInView, useMotionValue, useSpring, useTransform } from "framer-motion"
+import { motion, useInView, useMotionValue, useSpring, useTransform, useScroll } from "framer-motion"
 import { useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from "lucide-react"
@@ -77,6 +77,15 @@ function DiceCard({ dice, index }: { dice: typeof diceEffects[0]; index: number 
 
 export function RulesSection() {
   const containerRef = useRef(null)
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"]
+  })
+
+  // Parallax Values
+  const titleY = useTransform(scrollYProgress, [0, 0.5], [50, 0])
+  const gridY = useTransform(scrollYProgress, [0, 1], [100, -100])
+  const fallenY = useTransform(scrollYProgress, [0, 1], [150, -50])
 
   return (
     <section id="rules" className="py-32 px-6 bg-[#0a0a0a] relative overflow-hidden text-neutral-200" ref={containerRef}>
@@ -85,6 +94,7 @@ export function RulesSection() {
         {/* Section Header */}
         <div className="flex flex-col md:flex-row gap-12 mb-20">
           <motion.div
+            style={{ y: titleY }}
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7 }}
@@ -96,6 +106,7 @@ export function RulesSection() {
           </motion.div>
 
           <motion.div
+            style={{ y: useTransform(scrollYProgress, [0, 0.5], [100, 0]) }}
             initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
@@ -118,18 +129,23 @@ export function RulesSection() {
           </motion.div>
         </div>
 
-        {/* Dice Grid */}
-        <div className="mb-20">
+        {/* Dice Grid - Staggered Parallax */}
+        <motion.div style={{ y: gridY }} className="mb-20">
           <h3 className="text-sm font-mono text-neutral-500 mb-8 uppercase tracking-widest pl-2">Dice Permutations</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {diceEffects.map((dice, index) => (
-              <DiceCard key={dice.face} dice={dice} index={index} />
+              <motion.div
+                key={dice.face}
+                style={{ y: useTransform(scrollYProgress, [0, 1], [0, index % 2 === 0 ? -30 : 30]) }}
+              >
+                <DiceCard dice={dice} index={index} />
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Fallen Mechanics */}
-        <div className="relative group perspective-1000">
+        <motion.div style={{ y: fallenY }} className="relative group perspective-1000">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
           <div className="relative rounded-3xl bg-[#0a0a0a] border border-neutral-800 p-8 md:p-12 overflow-hidden shadow-2xl">
@@ -159,9 +175,10 @@ export function RulesSection() {
               </div>
             </div>
           </div>
-        </div>
-
+        </motion.div>
       </div>
-    </section>
+
+
+    </section >
   )
 }

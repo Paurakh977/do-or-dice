@@ -41,6 +41,16 @@ function GameplayStep({ step, index, isLast }: { step: typeof gameplaySteps[0]; 
   const mouseX = useSpring(x, { stiffness: 500, damping: 100 })
   const mouseY = useSpring(y, { stiffness: 500, damping: 100 })
 
+  // Parallax Logic
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"]
+  })
+
+  const textY = useTransform(scrollYProgress, [0, 1], [0, -50])
+  const cardY = useTransform(scrollYProgress, [0, 1], [50, -50])
+  const numberY = useTransform(scrollYProgress, [0, 1], [0, 100])
+
   function onMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
     const { left, top, width, height } = currentTarget.getBoundingClientRect()
     x.set(clientX - left - width / 2)
@@ -62,35 +72,35 @@ function GameplayStep({ step, index, isLast }: { step: typeof gameplaySteps[0]; 
         <motion.div
           initial={{ height: 0 }}
           animate={isInView ? { height: "100%" } : { height: 0 }}
-          transition={{ duration: 1, ease: "easeInOut" }}
+          whileInView={{ height: "100%" }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.5, ease: "easeInOut" }}
           className="w-px bg-gradient-to-b from-neutral-800 via-neutral-700 to-neutral-800 relative h-full group-hover/step:via-orange-500/50 transition-colors duration-500"
         >
         </motion.div>
       </div>
 
       {/* Content */}
-      <motion.div
+      <div
         className="pb-24 w-full perspective-1000"
-        initial={{ opacity: 0, x: 50 }}
-        animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
-        transition={{ duration: 0.8, ease: "easeOut", delay: index * 0.1 }}
       >
         <div className="flex flex-col md:flex-row md:items-start gap-8">
-          <div className="relative">
-            <span className="text-6xl md:text-8xl font-black text-neutral-900 select-none leading-none absolute -left-4 -top-8 -z-10 transition-colors duration-500 group-hover/step:text-neutral-800" style={{ fontFamily: "var(--font-heading)" }}>
+          <motion.div style={{ y: textY }} className="relative pt-10">
+            <motion.span style={{ y: numberY }} className="text-6xl md:text-9xl font-black text-neutral-900/80 select-none leading-none absolute -left-6 -top-2 -z-10 transition-colors duration-500 group-hover/step:text-neutral-800/80 pointer-events-none"
+              initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 1 }}>
               {step.step}
-            </span>
+            </motion.span>
             <h3 className="text-3xl md:text-4xl font-bold text-white mb-2 relative z-10" style={{ fontFamily: "var(--font-heading)" }}>
               {step.title}
             </h3>
             <p className="text-orange-500 text-lg md:text-xl font-medium mb-6 italic font-serif opacity-80">
               {step.subtitle}
             </p>
-          </div>
+          </motion.div>
 
           <motion.div
-            className="relative w-full max-w-xl group-card"
-            style={{ perspective: 1000 }}
+            style={{ y: cardY, perspective: 1000 }}
+            className="relative w-full max-w-xl group-card ml-auto mt-8 md:mt-0"
             onMouseMove={onMouseMove}
             onMouseLeave={onMouseLeave}
           >
@@ -113,11 +123,11 @@ function GameplayStep({ step, index, isLast }: { step: typeof gameplaySteps[0]; 
             </motion.div>
           </motion.div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Node */}
       <motion.div
-        className="absolute left-0 -translate-x-1/2 top-4 w-3 h-3 rounded-full bg-neutral-950 border border-neutral-700 z-20 shadow-[0_0_10px_rgba(0,0,0,1)]"
+        className="absolute left-0 -translate-x-1/2 top-12 w-3 h-3 rounded-full bg-neutral-950 border border-neutral-700 z-20 shadow-[0_0_10px_rgba(0,0,0,1)]"
         initial={{ scale: 0 }}
         whileInView={{ scale: 1, borderColor: "#f97316" }}
         transition={{ duration: 0.4, delay: index * 0.1 }}
@@ -139,10 +149,7 @@ export function GameplaySection() {
       <div className="max-w-6xl mx-auto relative z-10">
         <motion.div
           className="mb-32 text-center"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
+          style={{ y: useTransform(useScroll({ target: containerRef }).scrollYProgress, [0, 0.5], [100, -100]) }}
         >
           <h2 className="text-6xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-b from-neutral-100 to-neutral-800" style={{ fontFamily: "var(--font-heading)" }}>
             THE FLOW

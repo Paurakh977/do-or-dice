@@ -137,17 +137,27 @@ function FeatureCard({ feature, index }: { feature: typeof features[0]; index: n
 
 export function FeaturesSection() {
   const containerRef = useRef(null)
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"]
+  })
+
+  const y = useTransform(scrollYProgress, [0, 1], [0, -100])
+  const y2 = useTransform(scrollYProgress, [0, 1], [0, -200])
+  const columnY = useTransform(scrollYProgress, [0, 1], [20, -40]) // Middle column moves faster/slower - reduced to prevent overlap
+  const headerY = useTransform(scrollYProgress, [0, 0.3], [100, 0])
 
   return (
-    <section id="features" className="py-32 px-6 relative bg-black overflow-hidden" ref={containerRef}>
+    <section id="features" className="py-32 px-6 relative bg-black overflow-hidden bg-[url('/noise.png')] bg-repeat" ref={containerRef}>
       {/* Ambient Background */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none">
-        <div className="absolute top-[20%] left-[10%] w-[500px] h-[500px] bg-orange-900/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[20%] right-[10%] w-[400px] h-[400px] bg-red-900/10 rounded-full blur-[100px]" />
+        <motion.div style={{ y }} className="absolute top-[20%] left-[10%] w-[500px] h-[500px] bg-orange-900/10 rounded-full blur-[120px]" />
+        <motion.div style={{ y: y2 }} className="absolute bottom-[20%] right-[10%] w-[400px] h-[400px] bg-red-900/10 rounded-full blur-[100px]" />
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
         <motion.div
+          style={{ y: headerY }}
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -174,9 +184,21 @@ export function FeaturesSection() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {features.map((feature, index) => (
-            <FeatureCard key={feature.title} feature={feature} index={index} />
-          ))}
+          <div className="space-y-6 md:space-y-8">
+            {features.filter((_, i) => i % 3 === 0).map((feature, i) => (
+              <FeatureCard key={feature.title} feature={feature} index={i * 3} />
+            ))}
+          </div>
+          <motion.div style={{ y: columnY }} className="space-y-6 md:space-y-8">
+            {features.filter((_, i) => i % 3 === 1).map((feature, i) => (
+              <FeatureCard key={feature.title} feature={feature} index={i * 3 + 1} />
+            ))}
+          </motion.div>
+          <div className="space-y-6 md:space-y-8">
+            {features.filter((_, i) => i % 3 === 2).map((feature, i) => (
+              <FeatureCard key={feature.title} feature={feature} index={i * 3 + 2} />
+            ))}
+          </div>
         </div>
       </div>
     </section>

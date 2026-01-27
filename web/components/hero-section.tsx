@@ -3,8 +3,8 @@
 import { DiceScene } from "@/components/dice-scene"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Flame } from "lucide-react"
-import { motion } from "framer-motion"
-import { useEffect, useState, useMemo } from "react"
+import { motion, useScroll, useTransform } from "framer-motion"
+import { useEffect, useState, useMemo, useRef } from "react"
 
 // Dark obsidian floating rock - contrasts against light background
 function ObsidianRock({
@@ -12,14 +12,18 @@ function ObsidianRock({
     initialX,
     initialY,
     delay,
-    duration
+    duration,
+    scrollProgress
 }: {
     size: number
     initialX: number
     initialY: number
     delay: number
     duration: number
+    scrollProgress: any
 }) {
+    const y = useTransform(scrollProgress, [0, 1], [0, -200 - (Math.random() * 200)])
+
     return (
         <motion.div
             className="absolute rounded-full pointer-events-none"
@@ -28,6 +32,7 @@ function ObsidianRock({
                 height: size,
                 left: `${initialX}%`,
                 top: `${initialY}%`,
+                y: y,
                 background: `radial-gradient(circle at 30% 30%, 
                     rgba(60, 55, 55, 0.85) 0%, 
                     rgba(25, 20, 20, 0.9) 50%, 
@@ -39,7 +44,6 @@ function ObsidianRock({
                 `,
             }}
             animate={{
-                y: [0, -30, -15, -40, 0],
                 x: [0, 10, -8, 15, 0],
                 scale: [1, 1.03, 0.98, 1.02, 1],
                 rotate: [0, 3, -2, 4, 0],
@@ -98,6 +102,15 @@ function LavaEmber({ delay }: { delay: number }) {
 
 export function HeroSection() {
     const [mounted, setMounted] = useState(false)
+    const containerRef = useRef(null)
+    const { scrollYProgress } = useScroll({
+        target: containerRef,
+        offset: ["start start", "end start"]
+    })
+
+    const titleOneY = useTransform(scrollYProgress, [0, 1], [0, 100])
+    const titleTwoY = useTransform(scrollYProgress, [0, 1], [0, -100])
+    const contentY = useTransform(scrollYProgress, [0, 1], [0, 50])
 
     useEffect(() => {
         setMounted(true)
@@ -114,7 +127,7 @@ export function HeroSection() {
     ], [])
 
     return (
-        <section className="relative min-h-screen w-full overflow-hidden bg-[#fafafa] selection:bg-orange-500/20">
+        <section ref={containerRef} className="relative min-h-screen w-full overflow-hidden bg-[#fafafa] selection:bg-orange-500/20">
             {/* Subtle warm gradient at bottom */}
             <div
                 className="absolute bottom-0 left-0 right-0 h-[40%] pointer-events-none"
@@ -133,6 +146,7 @@ export function HeroSection() {
                         initialY={rock.y}
                         delay={rock.delay}
                         duration={rock.duration}
+                        scrollProgress={scrollYProgress}
                     />
                 ))}
             </div>
@@ -151,7 +165,7 @@ export function HeroSection() {
 
             {/* Content Container */}
             <div className="relative z-20 flex min-h-screen max-w-7xl mx-auto px-6 items-center">
-                <div className="flex flex-col max-w-2xl gap-10">
+                <motion.div style={{ y: contentY }} className="flex flex-col max-w-2xl gap-10">
 
                     {/* Badge */}
                     <motion.div
@@ -178,19 +192,21 @@ export function HeroSection() {
                             className="text-8xl md:text-[10rem] font-black tracking-[-0.04em] leading-[0.8] mb-6 text-depth-heavy"
                             style={{ fontFamily: "var(--font-heading)" }}
                         >
-                            <span className="text-neutral-900">DO OR</span>
+                            <motion.span style={{ y: titleOneY, display: 'inline-block' }} className="text-neutral-900">DO OR</motion.span>
                             <br />
-                            <span
+                            <motion.span
+                                style={{ y: titleTwoY }}
                                 className="relative inline-block"
-                                style={{
+                            >
+                                <span style={{
                                     background: "linear-gradient(135deg, #1a1a1a 0%, #ff6040 60%, #ff4020 100%)",
                                     WebkitBackgroundClip: "text",
                                     WebkitTextFillColor: "transparent",
                                     backgroundClip: "text",
-                                }}
-                            >
-                                DICE.
-                            </span>
+                                }}>
+                                    DICE.
+                                </span>
+                            </motion.span>
                         </h1>
                         <p className="text-xl text-neutral-500 max-w-md leading-relaxed font-medium tracking-tight">
                             Define your fate in a world of physics-based chaos.
@@ -251,7 +267,7 @@ export function HeroSection() {
                             </span>
                         </div>
                     </motion.div>
-                </div>
+                </motion.div>
             </div>
 
             {/* Subtle noise texture */}
